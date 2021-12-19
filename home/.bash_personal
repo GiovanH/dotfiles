@@ -1,0 +1,54 @@
+#!/bin/bash
+# Common functions
+
+alias ec="emacsclient -nw --create-frame --alternate-editor=''"
+alias emacs="emacs -nw --no-splash"
+alias ev="emacs -l ~/.emacs.d/evil-init.el"
+# alias ev="emacsclient -nw --create-frame --alternate-editor='' -s evil-mode --eval \"(evil-mode)\""
+alias ol="emacs -f org-mode"
+alias emerge="emacs -f emerge-files-command"
+alias ediff="emacs -diff"
+alias dired="ev -f dired"
+
+alias rsync="rsync -hir --executability --times"
+
+function git_clone_with_user {
+    REPO=$@
+    REPO_NAME=$(echo $REPO | sed -E "s/.+\/([^\/]+)\/([^\/]+)/\2/g")
+    USER_NAME=$(echo $REPO | sed -E "s/.+\/([^\/]+)\/([^\/]+)/\1/g")
+    echo Repo URL: $REPO
+    echo Username: $USER_NAME
+    echo Reponame: $REPO_NAME
+    CMD="git clone $REPO \"./$REPO_NAME @ $USER_NAME/\""
+    echo $CMD
+    git clone $REPO "./$REPO_NAME @ $USER_NAME/"
+}
+
+function react() {
+    if [ -z "$1" -o -z "$2" ]; then
+        echo "Usage: react <[./]file-to-watch> <[./]action> <to> <take>"
+    elif ! [ -r "$1" ]; then
+        echo "Can't react to $1, permission denied"
+    else
+        TARGET="$1"; shift
+        ACTION="$@"
+        while sleep 1; do
+            ATIME=$(stat -c %Z "$TARGET")
+            if [[ "$ATIME" != "${LTIME:-}" ]]; then
+                LTIME=$ATIME
+                $ACTION
+            fi
+        done
+    fi
+}
+
+# Node version manager lazy-loader
+
+if [[ -d "$HOME/.nvm" ]]; then
+    function nvm {
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+        echo "nvm initialized"
+    }
+fi

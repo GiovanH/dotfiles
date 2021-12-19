@@ -1,0 +1,27 @@
+# Bash profile subfile for cygwin
+
+# Python configuration
+
+export PYTHONIOENCODING=UTF-8
+
+export PYTHONPATH="C:\Users\Seth\Projects\python\lib"
+
+alias anaconda3="/cygdrive/c/ProgramData/anaconda3/python.exe"
+alias python3="/cygdrive/c/Program\ Files/Python38/python.exe"
+alias python38="/cygdrive/c/Program\ Files/Python38/python.exe"
+alias python37="/cygdrive/c/Program\ Files/Python36/python.exe"
+alias python37="/cygdrive/c/Program\ Files/Python37/python.exe"
+alias python36="/cygdrive/c/Program\ Files/Python36/python.exe"
+
+alias python2="/cygdrive/c/Program\ Files/Python27/python2.exe"
+alias python27="/cygdrive/c/Program\ Files/Python27/python2.exe"
+
+# Cygwin
+
+alias sudo="cygstart --action=runas"
+
+## Use case-insensitive filename globbing
+shopt -s nocaseglob
+
+## Ignore carriage returns.
+(set -o igncr) 2>/dev/null && set -o igncr; # comment is needed

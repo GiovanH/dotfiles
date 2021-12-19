@@ -1,0 +1,11 @@
+# This is Git's per-user configuration file.
+[filter "lfs"]
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+[user]
+	name = Gio
+	email = sethg@ipi.org
+[core]
+	autocrlf = true
