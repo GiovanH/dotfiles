@@ -67,7 +67,7 @@
 
 ;Hooks
 
-(add-hook 'after-save-hook #'delete-trailing-whitespace)
+(add-hook 'before-save-hook #'delete-trailing-whitespace)
 
 ;Making C-x k end an emacsclient session
 (add-hook 'server-switch-hook
@@ -83,7 +83,7 @@
 (setq-default indent-tabs-mode nil)            ; Use spaces instead of tabs
 (setq next-line-add-newlines t)                ; Add newline when at buffer end
 (setq undo-limit 100000)                       ; Increase number of undo
-
+(setq-default buffer-file-coding-system 'utf-8-unix) ; Correct line endings
 
 (show-paren-mode 1)                            ; Highlight parenthesis pairs
 
@@ -91,7 +91,8 @@
     (menu-bar-mode -1))
 
 ;(toggle-scroll-bar -1)
-(tool-bar-mode -1)
+;not defined in modern emacs
+(if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
 
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'post-forward-angle-brackets)

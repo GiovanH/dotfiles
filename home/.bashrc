@@ -70,9 +70,11 @@ shopt -s cdspell
 
 HOST_FAMILY="UNK"
 COLOR_HOST=$COLOR_PURPLE
+CYG_NEWLINE=' '
 if [[ "$(uname)" =~ "CYGWIN_NT" ]]; then
     HOST_FAMILY="CYGWIN"
     COLOR_HOST=$COLOR_GREEN
+    CYG_NEWLINE=$'\n'
 
     source ~/.profile_cygwin
 fi
@@ -86,5 +88,5 @@ function parse_git_branch() {
 # export PS1="\[\e]0;\w\a\]\n\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[0m\]\n\$"
 # export PS1="${COLOR_GREEN}\u${COLOR_NC}@${COLOR_HOST}\h${COLOR_NC}:\w${COLOR_PURPLE}\$(parse_git_branch)${COLOR_NC} > "
 
-export PS1="${COLOR_GREEN}\u${COLOR_NC}@${COLOR_HOST}\h${COLOR_BROWN}:\w${COLOR_PURPLE}$(parse_git_branch)\n${COLOR_NC}> "
+export PS1="${COLOR_GREEN}\u${COLOR_NC}@${COLOR_HOST}\h${COLOR_BROWN}:\w${COLOR_PURPLE}\$(parse_git_branch)${CYG_NEWLINE}${COLOR_NC}> "
 

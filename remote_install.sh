@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Host?"
-read host
+read -e host
 
 echo "################"
 echo ${host}
