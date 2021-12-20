@@ -1,31 +1,23 @@
 ;Package management
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 
-(add-to-list 'load-path "~/src/emacs-load-time")
-(require 'emacs-load-time)
+; (add-to-list 'load-path "~/src/emacs-load-time")
+; (require 'emacs-load-time)
 
 ;Custom
 (custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
  '(package-selected-packages
    '(ztree visual-regexp-steroids undo-fu anaconda-mode which-key cheatsheet magit helpful evil-collection)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+(custom-set-faces )
 
-; (require 'package)
+(require 'package)
 ; (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 ; (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
 ; (package-install-selected-packages)
-; (package-initialize)
+(package-initialize) ; require packages
 
 ;Major modes
+(message "Loading modes")
 
 (autoload 'terraform-mode "terraform-mode" "terraform major mode" t)
 (add-to-list 'auto-mode-alist '("\\.hcl\\'" . terraform-mode))
@@ -49,10 +41,17 @@
 
 (autoload 'rainbow-mode "rainbow-mode" "rainbow-mode; displays colors inline" t)
 
+; (require 'powerline)
+; (powerline-default-theme)
+
 (setq tetris-score-file "~/.emacs.d/tetris-scores")
 (autoload 'tetris "tetris" "tetris major mode" t)
 
+(require 'which-key)
 (which-key-mode t)
+
+;load ztree and things that hook it (evil) when loading ztree-dir
+(autoload #'ztree-dir "ztree" nil t)
 
 (require 'visual-regexp-steroids)
 (define-key global-map (kbd "C-c r") 'vr/replace)
@@ -80,6 +79,7 @@
 ;       (all-completions "" obarray 'commandp))))))
 
 ;Themes
+; (message "Loading themes")
 
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 (add-to-list 'load-path "~/.emacs.d/themes/")
@@ -96,6 +96,7 @@
 ;(load-theme 'solarized-dark t)
 
 ;Commands
+; (message "Loading settings")
 
 (defun command-line-diff (switch)
   (let ((file1 (pop command-line-args-left))
@@ -143,6 +144,7 @@
 (setq next-line-add-newlines t)                ; Add newline when at buffer end
 (setq undo-limit 100000)                       ; Increase number of undo
 (setq-default buffer-file-coding-system 'utf-8-unix) ; Correct line endings
+; (setq package-check-signature nil)
 
 (show-paren-mode 1)                            ; Highlight parenthesis pairs
 
@@ -164,3 +166,5 @@
 (global-set-key (kbd "C-c C-d") #'helpful-at-point) ;; Lookup the current symbol at point.
 (global-set-key (kbd "C-h F") #'helpful-function)   ;; Look up *F*unctions (excludes macros).
 (global-set-key (kbd "C-h C") #'helpful-command)    ;; Look up *C*ommands.
+
+; (message ".emacs'd.")
