@@ -1,9 +1,12 @@
 #!/bin/bash
 # Common functions
 
+# Emacs aliases
+alias emacsw="$(which emacs) --no-splash"
 alias ec="emacsclient -nw --create-frame --alternate-editor=''"
 alias emacs="emacs -nw --no-splash"
 alias ev="emacs -l ~/.emacs.d/evil-init.el"
+alias evw="emacsw -l ~/.emacs.d/evil-init.el"
 # alias ev="emacsclient -nw --create-frame --alternate-editor='' -s evil-mode --eval \"(evil-mode)\""
 alias ol="emacs -f org-mode"
 alias emerge="emacs -f emerge-files-command"

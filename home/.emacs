@@ -1,10 +1,29 @@
+;Package management
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 
-;(add-to-list 'load-path "~/src/emacs-load-time")
-;(require 'emacs-load-time)
+(add-to-list 'load-path "~/src/emacs-load-time")
+(require 'emacs-load-time)
 
-(setq tetris-score-file "~/.emacs.d/tetris-scores")
-(autoload 'tetris "tetris" "tetris major mode" t)
+;Custom
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(ztree visual-regexp-steroids undo-fu anaconda-mode which-key cheatsheet magit helpful evil-collection)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
+; (require 'package)
+; (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+; (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
+; (package-install-selected-packages)
+; (package-initialize)
 
 ;Major modes
 
@@ -26,12 +45,53 @@
    "Major mode for editing Markdown files" t)
 (add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
 (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
+(setq markdown-asymmetric-header t) ; don't use symmetric markdown header
+
+(autoload 'rainbow-mode "rainbow-mode" "rainbow-mode; displays colors inline" t)
+
+(setq tetris-score-file "~/.emacs.d/tetris-scores")
+(autoload 'tetris "tetris" "tetris major mode" t)
+
+(which-key-mode t)
+
+(require 'visual-regexp-steroids)
+(define-key global-map (kbd "C-c r") 'vr/replace)
+(define-key global-map (kbd "C-c q") 'vr/query-replace)
+;; if you use multiple-cursors, this is for you:
+(define-key global-map (kbd "C-c m") 'vr/mc-mark)
+;; to use visual-regexp-steroids's isearch instead of the built-in regexp isearch, also include the following lines:
+(define-key esc-map (kbd "C-r") 'vr/isearch-backward) ;; C-M-r
+(define-key esc-map (kbd "C-s") 'vr/isearch-forward) ;; C-M-s
+
+;ido
+
+(require 'ido)
+(ido-mode t)
+
+;;ido M-x
+; (global-set-key
+;  "\M-x"
+;  (lambda ()
+;    (interactive)
+;    (call-interactively
+;     (intern
+;      (ido-completing-read
+;       "M-x "
+;       (all-completions "" obarray 'commandp))))))
 
 ;Themes
 
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 (add-to-list 'load-path "~/.emacs.d/themes/")
 
+(setq zenburn-override-colors-alist
+      '(
+        ; ("zenburn-bg+05" . "#282828")
+        ; ("zenburn-bg+1"  . "#2F2F2F")
+        ; ("zenburn-bg+2"  . "##282923")
+        ; ("zenburn-bg+3"  . "#4F4F4F")
+        )
+      )
 (load-theme 'zenburn t)
 ;(load-theme 'solarized-dark t)
 
@@ -64,7 +124,6 @@
 ;(global-set-key (kbd "<tab>") 'indent-region)
 (global-set-key (kbd "C-c r") 'replace-regexp)
 
-
 ;Hooks
 
 (add-hook 'before-save-hook #'delete-trailing-whitespace)
@@ -96,3 +155,12 @@
 
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+
+;;Helpful
+
+(global-set-key (kbd "C-h f") #'helpful-callable)
+(global-set-key (kbd "C-h v") #'helpful-variable)
+(global-set-key (kbd "C-h k") #'helpful-key)
+(global-set-key (kbd "C-c C-d") #'helpful-at-point) ;; Lookup the current symbol at point.
+(global-set-key (kbd "C-h F") #'helpful-function)   ;; Look up *F*unctions (excludes macros).
+(global-set-key (kbd "C-h C") #'helpful-command)    ;; Look up *C*ommands.
