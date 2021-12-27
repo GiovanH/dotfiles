@@ -9,3 +9,6 @@
 	email = sethg@ipi.org
 [core]
 	autocrlf = true
+	sshCommand = ssh -i ~/.ssh/id_rsa
+[ssh]
+	key = ~/.ssh/id_rsa

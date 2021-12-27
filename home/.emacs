@@ -22,7 +22,8 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
-; (package-install-selected-packages)
+
+;(package-install-selected-packages)
 (package-initialize) ; require packages
 
 ;Major modes
@@ -56,7 +57,9 @@
   :mode (("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
   :init (setq markdown-command "multimarkdown"
-              markdown-asymmetric-header t))
+              markdown-asymmetric-header t)
+  :config (fset 'macro-md-make-embed [evil-normal-state ?^ ?! ?\[ ?\] ?\( escape ?$ ?A ?\) escape])
+          (global-set-key (kbd "C-c k") 'macro-md-make-embed))
 
 ; (autoload 'markdown-mode "markdown-mode"
    ; "Major mode for editing Markdown files" t)
@@ -79,6 +82,15 @@
   :config (which-key-mode t))
 ; (require 'which-key)
 ; (which-key-mode t)
+
+;; fuzzy file finder
+(use-package fiplr
+  :config
+  (setq fiplr-root-markers '(".git" ".svn"))
+  (setq fiplr-ignored-globs '((directories (".git" ".svn"))
+                              (files ("*.jpg" "*.png" "*.zip" "*~"))))
+  (global-set-key (kbd "C-c p p") 'fiplr-find-file)
+  (global-set-key (kbd "C-x p p") 'fiplr-find-file))
 
 ;load ztree and things that hook it (evil) when loading ztree-dir
 (autoload #'ztree-dir "ztree" nil t)
@@ -196,6 +208,7 @@
 (setq-default indent-tabs-mode nil)            ; Use spaces instead of tabs
 (setq next-line-add-newlines t)                ; Add newline when at buffer end
 (setq undo-limit 100000)                       ; Increase number of undo
+(setq vc-follow-symlinks t)
 (setq-default buffer-file-coding-system 'utf-8-unix) ; Correct line endings
 ; (setq package-check-signature nil)
 
