@@ -12,7 +12,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree visual-regexp-steroids undo-fu anaconda-mode which-key cheatsheet magit helpful evil-collection))))
+    (flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree visual-regexp-steroids undo-fu anaconda-mode which-key magit helpful evil-collection))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -24,11 +24,16 @@
 (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
 (setq package-check-signature nil)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-;(package-initialize) ; require packages
+(package-initialize) ; require packages
 ;(package-install-selected-packages)
 
 ;Major modes
 (message "Loading modes")
+
+;Async
+;(autoload 'dired-async-mode "dired-async.el" nil t)
+;(dired-async-mode 1)
+;(async-bytecomp-package-mode 1)
 
 (autoload 'edit-indirect "edit-indirect" "Indirect code editing" t)
 
@@ -247,5 +252,10 @@
 
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+
+(defun byte-recompile-smart ()
+  (interactive)
+  (byte-recompile-directory (expand-file-name "~/.emacs.d") 0)
+)
 
 ; (message ".emacs'd.")
