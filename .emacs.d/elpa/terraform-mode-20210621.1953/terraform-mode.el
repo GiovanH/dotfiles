@@ -4,6 +4,8 @@
 
 ;; Author: Syohei YOSHIDA <syohex@gmail.com>
 ;; URL: https://github.com/syohex/emacs-terraform-mode
+;; Package-Version: 20210621.1953
+;; Package-Commit: e560caaa9d9a11b0868adf6d9dcae5ebb5055730
 ;; Version: 0.06
 ;; Package-Requires: ((emacs "24.3") (hcl-mode "0.03") (dash "2.17.0"))
 
@@ -69,47 +71,47 @@
 
 (defconst terraform--block-builtins-with-type-only--builtin-highlight-regexp
   (eval `(rx line-start
-	          (zero-or-more space)
-		       (group-n 1 (regexp ,(eval terraform--block-builtins-with-type-only)))
-		            (one-or-more space))))
+	     (zero-or-more space)
+	     (group-n 1 (regexp ,(eval terraform--block-builtins-with-type-only)))
+	     (one-or-more space))))
 
 (defconst terraform--block-builtins-with-type-only--resource-type-highlight-regexp
   (eval `(rx (regexp ,(eval terraform--block-builtins-with-type-only--builtin-highlight-regexp))
-	          (group-n 2 (+? (not space)))
-		       (or (one-or-more space) "{"))))
+	     (group-n 2 (+? (not space)))
+	     (or (one-or-more space) "{"))))
 
 (defconst terraform--block-builtins-with-name-only
   (rx (or "variable" "module" "output")))
 
 (defconst terraform--block-builtins-with-name-only--builtin-highlight-regexp
   (eval `(rx line-start
-	          (zero-or-more space)
-		       (group-n 1 (regexp ,(eval terraform--block-builtins-with-name-only)))
-		            (one-or-more space))))
+	     (zero-or-more space)
+	     (group-n 1 (regexp ,(eval terraform--block-builtins-with-name-only)))
+	     (one-or-more space))))
 
 (defconst terraform--block-builtins-with-name-only--name-highlight-regexp
   (eval `(rx (regexp ,(eval terraform--block-builtins-with-name-only--builtin-highlight-regexp))
-	          (group-n 2 (+? (not space)))
-		       (or (one-or-more space) "{"))))
+	     (group-n 2 (+? (not space)))
+	     (or (one-or-more space) "{"))))
 
 (defconst terraform--block-builtins-with-type-and-name
   (rx (or "data" "resource")))
 
 (defconst terraform--block-builtins-with-type-and-name--builtin-highlight-regexp
   (eval `(rx line-start
-	          (zero-or-more space)
-		       (group-n 1 (regexp ,(eval terraform--block-builtins-with-type-and-name)))
-		            (one-or-more space))))
+	     (zero-or-more space)
+	     (group-n 1 (regexp ,(eval terraform--block-builtins-with-type-and-name)))
+	     (one-or-more space))))
 
 (defconst terraform--block-builtins-with-type-and-name--type-highlight-regexp
   (eval `(rx (regexp ,(eval terraform--block-builtins-with-type-and-name--builtin-highlight-regexp))
-	          (group-n 2 (+? (not space)))
-		       (one-or-more space))))
+	     (group-n 2 (+? (not space)))
+	     (one-or-more space))))
 
 (defconst terraform--block-builtins-with-type-and-name--name-highlight-regexp
   (eval `(rx (regexp ,(eval terraform--block-builtins-with-type-and-name--type-highlight-regexp))
-	          (group-n 3 (+? (not space)))
-		       (or (one-or-more space) "{"))))
+	     (group-n 3 (+? (not space)))
+	     (or (one-or-more space) "{"))))
 
 (defvar terraform-font-lock-keywords
   `((,terraform--block-builtins-without-name-or-type-regexp 1 font-lock-builtin-face)
@@ -167,34 +169,34 @@
       (goto-char (point-min))
       (while (re-search-forward terraform--block-builtins-with-type-only--resource-type-highlight-regexp nil t)
         (let ((key (match-string 1))
-	            (location (match-beginning 2))
-		          (resource-type (replace-regexp-in-string "\"" "" (match-string 2))))
-	    (-if-let (matches (gethash key search-results))
-		           (puthash key (push `(,resource-type . ,location) matches) search-results)
-			       (puthash key `((,resource-type . ,location)) search-results))))
+	      (location (match-beginning 2))
+	      (resource-type (replace-regexp-in-string "\"" "" (match-string 2))))
+	  (-if-let (matches (gethash key search-results))
+	      (puthash key (push `(,resource-type . ,location) matches) search-results)
+	    (puthash key `((,resource-type . ,location)) search-results))))
 
 
       (goto-char (point-min))
       (while (re-search-forward terraform--block-builtins-with-name-only--name-highlight-regexp nil t)
         (let ((key (match-string 1))
-	            (location (match-beginning 2))
-		          (resource-name (replace-regexp-in-string "\"" "" (match-string 2))))
-	    (-if-let (matches (gethash key search-results))
-		           (puthash key (push `(,resource-name . ,location) matches) search-results)
-			       (puthash key `((,resource-name . ,location)) search-results))))
+	      (location (match-beginning 2))
+	      (resource-name (replace-regexp-in-string "\"" "" (match-string 2))))
+	  (-if-let (matches (gethash key search-results))
+	      (puthash key (push `(,resource-name . ,location) matches) search-results)
+	    (puthash key `((,resource-name . ,location)) search-results))))
 
       (goto-char (point-min))
       (while (re-search-forward terraform--block-builtins-with-type-and-name--name-highlight-regexp nil t)
         (let* ((key (match-string 1))
-	              (location (match-beginning 2))
+	       (location (match-beginning 2))
                (type (match-string 2))
                (name (match-string 3))
-	              (resource-name (concat (replace-regexp-in-string "\"" "" type)
-					           "/"
-						         (replace-regexp-in-string "\"" "" name))))
-	    (-if-let (matches (gethash key search-results))
-		           (puthash key (push `(,resource-name . ,location) matches) search-results)
-			       (puthash key `((,resource-name . ,location)) search-results))))
+	       (resource-name (concat (replace-regexp-in-string "\"" "" type)
+				      "/"
+				      (replace-regexp-in-string "\"" "" name))))
+	  (-if-let (matches (gethash key search-results))
+	      (puthash key (push `(,resource-name . ,location) matches) search-results)
+	    (puthash key `((,resource-name . ,location)) search-results))))
 
       (maphash (lambda (k v) (push `(,k ,@v) menu-list)) search-results)
       menu-list)))

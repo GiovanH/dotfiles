@@ -11,7 +11,8 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(evil use-package ztree visual-regexp-steroids undo-fu anaconda-mode which-key cheatsheet magit helpful evil-collection)))
+   (quote
+    (company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree visual-regexp-steroids undo-fu anaconda-mode which-key cheatsheet magit helpful evil-collection))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -20,11 +21,11 @@
  )
 
 (require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
-
+(setq package-check-signature nil)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+;(package-initialize) ; require packages
 ;(package-install-selected-packages)
-(package-initialize) ; require packages
 
 ;Major modes
 (message "Loading modes")
@@ -32,7 +33,7 @@
 (autoload 'edit-indirect "edit-indirect" "Indirect code editing" t)
 
 (use-package terraform-mode
-  :mode (("\\.hcl\\'" . terraform-mode)
+  :mode (("\\.hcl\\'" . hcl-mode)
          ("\\.tfvars\\'" . terraform-mode)
          ("\\.tf\\'" . terraform-mode)))
 ; (autoload 'terraform-mode "terraform-mode" "terraform major mode" t)
@@ -143,6 +144,17 @@
         ("C-h C" . helpful-command)    ;; Look up *C*ommands.
 )
 
+
+(defun company-initialize-and-complete ()
+  (interactive)
+  (company-mode 1)
+  (company-complete))
+(use-package company
+                                        ;:commands (company-mode)
+  :bind (("C-c TAB" . company-initialize-and-complete)
+         :map company-mode-map
+         ("C-c TAB" . company-complete)))
+
 ;Themes
 ; (message "Loading themes")
 
@@ -216,6 +228,18 @@
 
 (if (not (window-system))
     (menu-bar-mode -1))
+
+;fix shell completion
+;(require 'comint)
+;(define-key comint-mode-map (kbd "<up>") 'comint-previous-input)
+;(define-key comint-mode-map (kbd "<down>") 'comint-next-input)
+
+;(require 'native-complete)
+;(with-eval-after-load 'shell
+;  (native-complete-setup-bash))
+
+(advice-add 'comint-term-environment
+            :filter-return (lambda (env) (cons "INSIDE_EMACS" env)))
 
 ;(toggle-scroll-bar -1)
 ;not defined in modern emacs

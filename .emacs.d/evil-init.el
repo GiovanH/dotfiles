@@ -30,6 +30,8 @@
 ; (require 'evil-collection)
 ; (evil-collection-init)
 
+; (add-to-list 'load-path "~/.emacs.d/evil/")
+
 (message "evil grows in cracks and holes and lives in peoples' minds")
 
 ; (require 'powerline-evil)
@@ -40,6 +42,8 @@
 
 ;not working
 ;(define-key evil-visual-state-map (kbd "<tab>") indent-region)
+
+(message "where the sun it never shines")
 
 (setq evil-undo-system 'undo-fu)
 (define-key evil-normal-state-map "u" 'undo-fu-only-undo)
