@@ -11,14 +11,13 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   (quote
-    (flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree visual-regexp-steroids undo-fu anaconda-mode which-key magit helpful evil-collection))))
+   '(flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree visual-regexp-steroids undo-fu anaconda-mode which-key magit helpful evil-collection)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(default ((t (:family "Consolas" :foundry "outline" :slant normal :weight normal :height 120 :width normal)))))
 
 (require 'package)
 (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
@@ -29,6 +28,10 @@
 
 ;Major modes
 (message "Loading modes")
+
+;; org-mode is default mode for txt files
+(add-to-list 'auto-mode-alist '("\\.txt\\'" . org-mode))
+;(add-to-list 'auto-mode-alist '("\\.\\(org\\|org_archive\\|txt\\)$" . org-mode))
 
 ;Async
 ;(autoload 'dired-async-mode "dired-async.el" nil t)
@@ -41,22 +44,13 @@
   :mode (("\\.hcl\\'" . hcl-mode)
          ("\\.tfvars\\'" . terraform-mode)
          ("\\.tf\\'" . terraform-mode)))
-; (autoload 'terraform-mode "terraform-mode" "terraform major mode" t)
-; (add-to-list 'auto-mode-alist '("\\.hcl\\'" . terraform-mode))
-; (add-to-list 'auto-mode-alist '("\\.tfvars\\'" . terraform-mode))
-; (add-to-list 'auto-mode-alist '("\\.tf\\'" . terraform-mode))
 
 (use-package jinja2-mode
   :mode ("\\.j2\\'" . jinja2-mode))
-; (autoload 'jinja2-mode "jinja2-mode" "jinja2 major mode" t)
-; (add-to-list 'auto-mode-alist '("\\.j2\\'" . jinja2-mode))
 
 (use-package yaml-mode
   :mode (("\\.yml\\'" . yaml-mode)
          ("\\.yaml\\'" . yaml-mode)))
-; (autoload 'yaml-mode "yaml-mode" "YAML major mode" t)
-; (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
-; (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-mode))
 
 (use-package markdown-mode
   :commands (markdown-mode gfm-mode)
@@ -67,10 +61,6 @@
   :config (fset 'macro-md-make-embed [evil-normal-state ?^ ?! ?\[ ?\] ?\( escape ?$ ?A ?\) escape])
           (global-set-key (kbd "C-c k") 'macro-md-make-embed))
 
-; (autoload 'markdown-mode "markdown-mode"
-   ; "Major mode for editing Markdown files" t)
-; (add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
-; (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
 (setq markdown-asymmetric-header t) ; don't use symmetric markdown header
 
 (use-package rainbow-mode
@@ -81,13 +71,10 @@
 ; (powerline-default-theme)
 
 (setq tetris-score-file "~/.emacs.d/tetris-scores")
-(use-package tetris)
-; (autoload 'tetris "tetris" "tetris major mode" t)
+(autoload 'tetris "tetris" "tetris major mode" t)
 
 (use-package which-key
   :config (which-key-mode t))
-; (require 'which-key)
-; (which-key-mode t)
 
 ;; fuzzy file finder
 (use-package fiplr
@@ -111,17 +98,8 @@
          ("C-r" . vr/isearch-backward)
          ("C-s" . vr/isearch-forward)
         ))
-; (require 'visual-regexp-steroids)
-; (define-key global-map (kbd "C-c r") 'vr/replace)
-; (define-key global-map (kbd "C-c q") 'vr/query-replace)
-; ;; if you use multiple-cursors, this is for you:
-; (define-key global-map (kbd "C-c m") 'vr/mc-mark)
-; ;; to use visual-regexp-steroids's isearch instead of the built-in regexp isearch, also include the following lines:
-; (define-key esc-map (kbd "C-r") 'vr/isearch-backward) ;; C-M-r
-; (define-key esc-map (kbd "C-s") 'vr/isearch-forward) ;; C-M-s
 
 ;ido
-
 (use-package ido
   :config '((ido-mode t)
 ;;ido M-x
@@ -135,6 +113,8 @@
             ;       "M-x "
             ;       (all-completions "" obarray 'commandp))))))
            ))
+
+
 ; (require 'ido)
 ; (ido-mode t)
 
@@ -143,19 +123,21 @@
 (use-package helpful
   :bind ("C-h f" . helpful-callable)
         ("C-h v" . helpful-variable)
-        ("C-h k" . helpful-key)
         ("C-c C-d" . helpful-at-point) ;; Lookup the current symbol at point.
         ("C-h F" . helpful-function)   ;; Look up *F*unctions (excludes macros).
         ("C-h C" . helpful-command)    ;; Look up *C*ommands.
-)
+        ("C-h k" . helpful-key))
 
+(use-package undo-fu
+  :config
+  (global-set-key (kbd "C-x u") 'undo-fu-only-undo)
+  (global-set-key (kbd "C-r") 'undo-fu-only-redo))
 
 (defun company-initialize-and-complete ()
   (interactive)
   (company-mode 1)
   (company-complete))
 (use-package company
-                                        ;:commands (company-mode)
   :bind (("C-c TAB" . company-initialize-and-complete)
          :map company-mode-map
          ("C-c TAB" . company-complete)))
@@ -165,17 +147,6 @@
 
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 (add-to-list 'load-path "~/.emacs.d/themes/")
-
-(setq zenburn-override-colors-alist
-      '(
-        ; ("zenburn-bg+05" . "#282828")
-        ; ("zenburn-bg+1"  . "#2F2F2F")
-        ; ("zenburn-bg+2"  . "##282923")
-        ; ("zenburn-bg+3"  . "#4F4F4F")
-        )
-)
-(load-theme 'zenburn t)
-;(load-theme 'solarized-dark t)
 
 ;Commands
 ; (message "Loading settings")
@@ -202,6 +173,15 @@
 ;; Unbind 'C-x f'
 (global-unset-key "\C-xf")
 
+(define-key global-map "\C-ca" 'org-agenda)
+(define-key global-map "\C-x\C-r" 'rgrep)
+
+;Use ctrl+shift+c/v in x11 mode
+(global-set-key (kbd "C-S-C") 'copy-to-clipboard)
+(global-set-key (kbd "C-S-V") 'paste-from-clipboard)
+(global-set-key (kbd "C-S-c") 'copy-to-clipboard)
+(global-set-key (kbd "C-S-v") 'paste-from-clipboard)
+
 ;(global-set-key [f12] 'indent-buffer)
 (global-set-key (kbd "C-<f10>") 'menu-bar-open)
 ;(global-set-key (kbd "<tab>") 'indent-region)
@@ -209,7 +189,14 @@
 
 ;Hooks
 
-(add-hook 'before-save-hook #'delete-trailing-whitespace)
+;Delete trailing whitespace
+(add-hook 'before-save-hook
+          (lambda ()
+            (unless (eq major-mode 'markdown-mode)
+              (delete-trailing-whitespace))))
+
+;When saving files, set execute permission if #! is in first line.
+(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 ;Making C-x k end an emacsclient session
 (add-hook 'server-switch-hook
@@ -221,20 +208,53 @@
 
 ;Configuration
 
+(setq x-alt-keysym 'meta)
+
+(setq inhibit-startup-screen t)
 (setq inhibit-startup-message t)
-(setq-default indent-tabs-mode nil)            ; Use spaces instead of tabs
-(setq next-line-add-newlines t)                ; Add newline when at buffer end
-(setq undo-limit 100000)                       ; Increase number of undo
+(setq delete-trailing-lines nil)
+(setq-default indent-tabs-mode nil)     ; Use spaces instead of tabs
+(setq-default tab-width 4)
+(setq next-line-add-newlines t)         ; Add newline when at buffer end
+(setq message-log-max 10000)            ; Increase number of undo
+(setq undo-limit 10000)                 ; Increase number of undo
 (setq vc-follow-symlinks t)
 (setq-default buffer-file-coding-system 'utf-8-unix) ; Correct line endings
-; (setq package-check-signature nil)
+(setq sentence-end-double-space nil)
+(setq diff-switches "-u")               ; default to unified diffs
+(setq require-final-newline t)
+(setq ls-lisp-dirs-first t)             ;display dirs first in dired
+(setq-default indicate-empty-lines t)
+(setq-default indicate-buffer-boundaries 'left)
+(setq-default frame-title-format (list "%b @Emacs"))
+(setq show-paren-delay 0) (show-paren-mode 1)  ; Highlight parenthesis pairs
+(setq zone-timer (run-with-idle-timer 120 t 'zone))
+;(setq-default show-trailing-whitespace t) ;Show stray whitespace.
 
-(show-paren-mode 1)                            ; Highlight parenthesis pairs
+(defconst query-replace-highlight t)    ;highlight during query
+(defconst search-highlight t)           ;highlight incremental search
+
+;Show info in the mode line
+(line-number-mode 1)
+(column-number-mode 1)
+
+;; Write auto-saves and backups to separate directory.
+(make-directory "~/.tmp/emacs/auto-save/" t)
+(setq auto-save-file-name-transforms '((".*" "~/.tmp/emacs/auto-save/" t)))
+(setq backup-directory-alist '(("." . "~/.tmp/emacs/backup/")))
+
+;; Do not move the current file while creating backup.
+(setq backup-by-copying t)
+
+;; Disable lockfiles.
+(setq create-lockfiles nil)
 
 (if (not (window-system))
     (menu-bar-mode -1))
 
 ;fix shell completion
+(advice-add 'comint-term-environment
+            :filter-return (lambda (env) (cons "INSIDE_EMACS" env)))
 ;(require 'comint)
 ;(define-key comint-mode-map (kbd "<up>") 'comint-previous-input)
 ;(define-key comint-mode-map (kbd "<down>") 'comint-next-input)
@@ -243,10 +263,6 @@
 ;(with-eval-after-load 'shell
 ;  (native-complete-setup-bash))
 
-(advice-add 'comint-term-environment
-            :filter-return (lambda (env) (cons "INSIDE_EMACS" env)))
-
-;(toggle-scroll-bar -1)
 ;not defined in modern emacs
 (if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
 
@@ -255,7 +271,6 @@
 
 (defun byte-recompile-smart ()
   (interactive)
-  (byte-recompile-directory (expand-file-name "~/.emacs.d") 0)
-)
+  (byte-recompile-directory (expand-file-name "~/.emacs.d") 0))
 
 ; (message ".emacs'd.")

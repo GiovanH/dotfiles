@@ -2,7 +2,7 @@
 # Common functions
 
 # Emacs aliases
-alias emacsw="$(which emacs) --no-splash"
+alias emacsw=$(echo $(which emacs-w32) $(which emacs) | cut -d " " -f1)
 alias ec="emacsclient -nw --create-frame --alternate-editor=''"
 alias emacs="emacs -nw --no-splash"
 alias ev="emacs -l ~/.emacs.d/evil-init.el"
@@ -12,6 +12,8 @@ alias ol="emacs -f org-mode"
 alias emerge="emacs -f emerge-files-command"
 alias ediff="emacs -diff"
 alias dired="ev -f dired"
+
+alias which="alias | /usr/bin/which -i --all"
 
 alias rsync="rsync -hir --executability --times"
 

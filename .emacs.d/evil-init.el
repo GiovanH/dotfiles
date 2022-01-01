@@ -1,3 +1,13 @@
+(setq zenburn-override-colors-alist
+      '(
+        ; ("zenburn-bg+05" . "#282828")
+        ; ("zenburn-bg+1"  . "#2F2F2F")
+        ; ("zenburn-bg+2"  . "##282923")
+        ; ("zenburn-bg+3"  . "#4F4F4F")
+        )
+)
+(load-theme 'zenburn t)
+
 (message "evil grows in the dark")
 
 ; (add-to-list 'load-path "~/.emacs.d/evil/")
@@ -9,8 +19,11 @@
   (setq evil-overriding-maps nil)
   (setq evil-collection-want-unimpaired-p nil)
   (setq global-evil-collection-unimpaired-mode nil)
+  (setq evil-undo-system 'undo-fu)
   :config
-  (evil-mode 1))
+  (evil-mode 1)
+  (define-key evil-normal-state-map "u" 'undo-fu-only-undo)
+  (define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo))
 
 ; (setq evil-want-integration t)
 ; (setq evil-want-keybinding nil)
@@ -45,6 +58,3 @@
 
 (message "where the sun it never shines")
 
-(setq evil-undo-system 'undo-fu)
-(define-key evil-normal-state-map "u" 'undo-fu-only-undo)
-(define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo)
