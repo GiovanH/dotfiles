@@ -37,6 +37,8 @@ alias l='ls -CF'                              #
 [[ -d "${HOME}/man" ]] && MANPATH="${HOME}/man:${MANPATH}"
 [[ -d "${HOME}/info" ]] && INFOPATH="${HOME}/info:${INFOPATH}"
 
+PATH="${HOME}/dotfiles/scripts:${PATH}"
+
 # User functions
 
 source ~/.bash_colors
