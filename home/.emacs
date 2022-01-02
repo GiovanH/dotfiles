@@ -11,7 +11,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree visual-regexp-steroids undo-fu anaconda-mode which-key magit helpful evil-collection)))
+   '(hydra flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree visual-regexp-steroids undo-fu anaconda-mode which-key magit helpful evil-collection)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -75,6 +75,8 @@
 
 (use-package which-key
   :config (which-key-mode t))
+
+; (use-package hydra)
 
 ;; fuzzy file finder
 (use-package fiplr
@@ -228,7 +230,9 @@
 (setq-default indicate-buffer-boundaries 'left)
 (setq-default frame-title-format (list "%b @Emacs"))
 (setq show-paren-delay 0) (show-paren-mode 1)  ; Highlight parenthesis pairs
-(setq zone-timer (run-with-idle-timer 120 t 'zone))
+;(setq zone-timer (run-with-idle-timer 120 t 'zone))
+(setq ring-bell-function 'ignore)
+(setq visible-bell t)
 ;(setq-default show-trailing-whitespace t) ;Show stray whitespace.
 
 (defconst query-replace-highlight t)    ;highlight during query
@@ -242,6 +246,14 @@
 (make-directory "~/.tmp/emacs/auto-save/" t)
 (setq auto-save-file-name-transforms '((".*" "~/.tmp/emacs/auto-save/" t)))
 (setq backup-directory-alist '(("." . "~/.tmp/emacs/backup/")))
+
+(setq savehist-file "~/.emacs.d/savehist")
+(savehist-mode +1)
+(setq savehist-save-minibuffer-history +1)
+(setq savehist-additional-variables
+      '(kill-ring
+        search-ring
+        regexp-search-ring))
 
 ;; Do not move the current file while creating backup.
 (setq backup-by-copying t)
@@ -269,8 +281,14 @@
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
 
+; extra commands
+
 (defun byte-recompile-smart ()
   (interactive)
   (byte-recompile-directory (expand-file-name "~/.emacs.d") 0))
+
+(defun my-reload-emacs-configuration ()
+  (interactive)
+  (load-file "~/.emacs"))
 
 ; (message ".emacs'd.")
