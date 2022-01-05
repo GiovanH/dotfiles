@@ -2,7 +2,7 @@
 # Common functions
 
 # Emacs aliases
-alias emacsw=$(echo $(which emacs-w32) $(which emacs) | cut -d " " -f1)
+alias emacsw=$(echo $(which emacs-w32 2>/dev/null) $(which emacs 2>/dev/null) | cut -d " " -f1)
 alias ec="emacsclient -nw --create-frame --alternate-editor=''"
 alias emacs="emacs -nw --no-splash"
 alias ev="emacs -l ~/.emacs.d/evil-init.el"
@@ -12,10 +12,13 @@ alias ol="emacs -f org-mode"
 alias emerge="emacs -f emerge-files-command"
 alias ediff="emacs -diff"
 alias dired="ev -f dired"
+alias find="/bin/find"
 
 alias which="alias | /usr/bin/which -i --all"
 
 alias rsync="rsync -hir --executability --times"
+
+alias delete_empty_dirs="/bin/find * -type d -empty -exec echo \"rmdir '{}'\" \; -delete"
 
 function git_clone_with_user {
     REPO=$@

@@ -11,7 +11,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(hydra flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree visual-regexp-steroids undo-fu anaconda-mode which-key magit helpful evil-collection)))
+   '(flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree undo-fu anaconda-mode which-key magit helpful evil-collection)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -89,17 +89,6 @@
 
 ;load ztree and things that hook it (evil) when loading ztree-dir
 (autoload #'ztree-dir "ztree" nil t)
-
-(use-package visual-regexp-steroids
-  :bind (("C-c r" . vr/replace)
-         ("C-c q" . vr/query-replace)
-;; if you use multiple-cursors, this is for you:
-         ("C-c m" . vr/mc-mark)
-         :map esc-map
-;; to use visual-regexp-steroids's isearch instead of the built-in regexp isearch, also include the following lines:
-         ("C-r" . vr/isearch-backward)
-         ("C-s" . vr/isearch-forward)
-        ))
 
 ;ido
 (use-package ido
@@ -179,10 +168,8 @@
 (define-key global-map "\C-x\C-r" 'rgrep)
 
 ;Use ctrl+shift+c/v in x11 mode
-(global-set-key (kbd "C-S-C") 'copy-to-clipboard)
-(global-set-key (kbd "C-S-V") 'paste-from-clipboard)
-(global-set-key (kbd "C-S-c") 'copy-to-clipboard)
-(global-set-key (kbd "C-S-v") 'paste-from-clipboard)
+(global-set-key (kbd "C-S-C") 'kill-ring-save)
+(global-set-key (kbd "C-S-V") 'yank)
 
 ;(global-set-key [f12] 'indent-buffer)
 (global-set-key (kbd "C-<f10>") 'menu-bar-open)
@@ -280,6 +267,23 @@
 
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+
+; org config
+
+;; Run/highlight code using babel in org-mode
+(with-eval-after-load 'org-mode
+  (use-package ob-async))
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '(
+   (python . t)
+   (shell . t)
+   ;; Include other languages here...
+   ))
+;; Syntax highlight in #+BEGIN_SRC blocks
+(setq org-src-fontify-natively t)
+;; Don't prompt before running code in org
+(setq org-confirm-babel-evaluate nil)
 
 ; extra commands
 

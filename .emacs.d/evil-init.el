@@ -1,12 +1,12 @@
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 (setq zenburn-override-colors-alist
-      '(
-        ; ("zenburn-bg+05" . "#282828")
-        ; ("zenburn-bg+1"  . "#2F2F2F")
-        ; ("zenburn-bg+2"  . "##282923")
-        ; ("zenburn-bg+3"  . "#4F4F4F")
-        )
+  '(
+    ("zenburn-bg"       . "unspecified-bg")
+   )
 )
 (load-theme 'zenburn t)
+(unless window-system 
+  (set-face-attribute 'default nil :background "unspecified-bg"))
 
 (message "evil grows in the dark")
 
@@ -22,6 +22,7 @@
   (setq evil-undo-system 'undo-fu)
   :config
   (evil-mode 1)
+  (add-hook 'with-editor-mode-hook 'evil-insert-state)
   (define-key evil-normal-state-map "u" 'undo-fu-only-undo)
   (define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo))
 
