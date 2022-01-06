@@ -1,17 +1,48 @@
-;Package management
+; Backports
+; backport
+(defmacro with-eval-after-load (file &rest body)
+  "Execute BODY after FILE is loaded.
+FILE is normally a feature name, but it can also be a file name,
+in case that file does not provide any feature.  See `eval-after-load'
+for more details about the different forms of FILE and their semantics."
+  (declare (indent 1) (debug t))
+  `(eval-after-load ,file (lambda () ,@body)))
+
+
+; (defmacro with-eval-after-load (file &rest body)
+;     "Execute BODY after FILE is loaded."
+;     (declare (indent 1) (debug t))
+;     `(eval-after-load ,file
+;        '(progn
+;           (let ((time-start))
+;             ;(message "{{{ Running code block specific to %s..."
+;             ;         ,file)
+;             ;(setq time-start (float-time))
+;             ,@body
+;             ;(message "}}} Running code block specific to %s... done in %.3f s"
+;             ;         ,file
+;             ;         (- (float-time) time-start))
+;             ))))
+
+; ;Package management
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 
-; (add-to-list 'load-path "~/src/emacs-load-time")
-; (require 'emacs-load-time)
+; Magit
+(setq magit-last-seen-setup-instructions "1.4.0")
+(add-to-list 'load-path "~/.emacs.d/magit/")
+; (autoload 'magit "magit" "Indirect code editing" t)
 
-;Custom
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree undo-fu anaconda-mode which-key magit helpful evil-collection)))
+; ; (add-to-list 'load-path "~/src/emacs-load-time")
+; ; (require 'emacs-load-time)
+
+; ;Custom
+; (custom-set-variables
+;  ;; custom-set-variables was added by Custom.
+;  ;; If you edit it by hand, you could mess it up, so be careful.
+;  ;; Your init file should contain only one such instance.
+;  ;; If there is more than one, they won't work right.
+;  '(package-selected-packages
+;    '(flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree undo-fu anaconda-mode which-key magit helpful evil-collection)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -20,11 +51,11 @@
  '(default ((t (:family "Consolas" :foundry "outline" :slant normal :weight normal :height 120 :width normal)))))
 
 (require 'package)
-(add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
-(setq package-check-signature nil)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-(package-initialize) ; require packages
-;(package-install-selected-packages)
+; (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
+; (setq package-check-signature nil)
+; (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+; (package-initialize) ; require packages
+; ;(package-install-selected-packages)
 
 ;Major modes
 (message "Loading modes")
@@ -32,11 +63,6 @@
 ;; org-mode is default mode for txt files
 (add-to-list 'auto-mode-alist '("\\.txt\\'" . org-mode))
 ;(add-to-list 'auto-mode-alist '("\\.\\(org\\|org_archive\\|txt\\)$" . org-mode))
-
-;Async
-;(autoload 'dired-async-mode "dired-async.el" nil t)
-;(dired-async-mode 1)
-;(async-bytecomp-package-mode 1)
 
 (autoload 'edit-indirect "edit-indirect" "Indirect code editing" t)
 
@@ -52,14 +78,18 @@
   :mode (("\\.yml\\'" . yaml-mode)
          ("\\.yaml\\'" . yaml-mode)))
 
-(use-package markdown-mode
-  :commands (markdown-mode gfm-mode)
-  :mode (("\\.md\\'" . markdown-mode)
-         ("\\.markdown\\'" . markdown-mode))
-  :init (setq markdown-command "multimarkdown"
-              markdown-asymmetric-header t)
-  :config (fset 'macro-md-make-embed [evil-normal-state ?^ ?! ?\[ ?\] ?\( escape ?$ ?A ?\) escape])
-          (global-set-key (kbd "C-c k") 'macro-md-make-embed))
+(autoload 'markdown-mode "markdown-mode" "markdown-mode; local major mode" t)
+(add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
+
+; (use-package markdown-mode
+;   :commands (markdown-mode gfm-mode)
+;   :mode (("\\.md\\'" . markdown-mode)
+;          ("\\.markdown\\'" . markdown-mode))
+;   :init (setq markdown-command "multimarkdown"
+;               markdown-asymmetric-header t)
+;   :config (fset 'macro-md-make-embed [evil-normal-state ?^ ?! ?\[ ?\] ?\( escape ?$ ?A ?\) escape])
+;           (global-set-key (kbd "C-c k") 'macro-md-make-embed))
 
 (setq markdown-asymmetric-header t) ; don't use symmetric markdown header
 
@@ -67,16 +97,11 @@
   :commands (rainbow-mode))
 ; (autoload 'rainbow-mode "rainbow-mode" "rainbow-mode; displays colors inline" t)
 
-; (require 'powerline)
-; (powerline-default-theme)
-
 (setq tetris-score-file "~/.emacs.d/tetris-scores")
 (autoload 'tetris "tetris" "tetris major mode" t)
 
-(use-package which-key
-  :config (which-key-mode t))
-
-; (use-package hydra)
+(require 'which-key)
+(which-key-mode t)
 
 ;; fuzzy file finder
 (use-package fiplr
@@ -90,34 +115,15 @@
 ;load ztree and things that hook it (evil) when loading ztree-dir
 (autoload #'ztree-dir "ztree" nil t)
 
-;ido
-(use-package ido
-  :config '((ido-mode t)
-;;ido M-x
-            ; (global-set-key
-            ;  "\M-x"
-            ;  (lambda ()
-            ;    (interactive)
-            ;    (call-interactively
-            ;     (intern
-            ;      (ido-completing-read
-            ;       "M-x "
-            ;       (all-completions "" obarray 'commandp))))))
-           ))
-
-
-; (require 'ido)
-; (ido-mode t)
-
 ;;Helpful
-
-(use-package helpful
-  :bind ("C-h f" . helpful-callable)
-        ("C-h v" . helpful-variable)
-        ("C-c C-d" . helpful-at-point) ;; Lookup the current symbol at point.
-        ("C-h F" . helpful-function)   ;; Look up *F*unctions (excludes macros).
-        ("C-h C" . helpful-command)    ;; Look up *C*ommands.
-        ("C-h k" . helpful-key))
+; TODO
+; (use-package helpful
+;   :bind ("C-h f" . helpful-callable)
+;         ("C-h v" . helpful-variable)
+;         ("C-c C-d" . helpful-at-point) ;; Lookup the current symbol at point.
+;         ("C-h F" . helpful-function)   ;; Look up *F*unctions (excludes macros).
+;         ("C-h C" . helpful-command)    ;; Look up *C*ommands.
+;         ("C-h k" . helpful-key))
 
 (use-package undo-fu
   :config
@@ -199,6 +205,7 @@
 
 (setq x-alt-keysym 'meta)
 
+(setq debug-on-error t)
 (setq inhibit-startup-screen t)
 (setq inhibit-startup-message t)
 (setq delete-trailing-lines nil)
@@ -252,15 +259,8 @@
     (menu-bar-mode -1))
 
 ;fix shell completion
-(advice-add 'comint-term-environment
-            :filter-return (lambda (env) (cons "INSIDE_EMACS" env)))
-;(require 'comint)
-;(define-key comint-mode-map (kbd "<up>") 'comint-previous-input)
-;(define-key comint-mode-map (kbd "<down>") 'comint-next-input)
-
-;(require 'native-complete)
-;(with-eval-after-load 'shell
-;  (native-complete-setup-bash))
+; (advice-add 'comint-term-environment
+;             :filter-return (lambda (env) (cons "INSIDE_EMACS" env)))
 
 ;not defined in modern emacs
 (if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
@@ -277,7 +277,7 @@
  'org-babel-load-languages
  '(
    (python . t)
-   (shell . t)
+   ; (sh . t)
    ;; Include other languages here...
    ))
 ;; Syntax highlight in #+BEGIN_SRC blocks

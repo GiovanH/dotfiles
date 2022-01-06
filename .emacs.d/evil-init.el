@@ -1,12 +1,13 @@
+(load-file "~/dotfiles/home/.emacs")
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
-(setq zenburn-override-colors-alist
+
+(unless window-system 
+  (setq zenburn-override-colors-alist
   '(
     ("zenburn-bg"       . "unspecified-bg")
    )
-)
+))
 (load-theme 'zenburn t)
-(unless window-system 
-  (set-face-attribute 'default nil :background "unspecified-bg"))
 
 (message "evil grows in the dark")
 
@@ -36,26 +37,50 @@
 
 (message "where the sun it never shines")
 
-(use-package evil-collection
-  :after evil
-  :config
-  (evil-collection-init))
+(setq evil-collection-mode-list '(
+  calc 
+  comint
+  company
+  ediff
+  flycheck
+  flymake
+  org
+  which-key
+  woman
+  yaml-mode
+  (custom cus-edit)
+  (buff-menu "buff-menu")
+  (ztree ztree-diff)
+  ))
 
-; (require 'evil-collection)
-; (evil-collection-init)
+(add-to-list 'load-path "~/.emacs.d/elpa/evil-collection/")
+(require 'evil-collection)
 
-; (add-to-list 'load-path "~/.emacs.d/evil/")
+(evil-collection-init)
+
+; (load-file "~/.emacs.d/elpa/evil-collection/modes/ztree/evil-collection-ztree.el") (evil-collection-ztree-setup)
+
+
+; (evil-define-key 'normal org-mode-map
+;   (kbd "RET") 'org-open-at-point
+;   "za"        'org-cycle
+;   "zA"        'org-shifttab
+;   "zm"        'hide-body
+;   "zr"        'show-all
+;   "zo"        'show-subtree
+;   "zO"        'show-all
+;   "zc"        'hide-subtree
+;   "zC"        'hide-all
+;   (kbd "M-j") 'org-shiftleft
+;   (kbd "M-k") 'org-shiftright
+;   (kbd "M-H") 'org-metaleft
+;   (kbd "M-J") 'org-metadown
+;   (kbd "M-K") 'org-metaup
+;   (kbd "M-L") 'org-metaright)
+
+; ; (add-to-list 'load-path "~/.emacs.d/evil/")
 
 (message "evil grows in cracks and holes and lives in peoples' minds")
 
-; (require 'powerline-evil)
-; (powerline-evil-vim-theme)
-
 (define-key evil-normal-state-map "x" 'execute-extended-command) ;; N x = M-x
 (define-key evil-normal-state-map [escape] nil) ; restore M- behavior in normal mode
-
-;not working
-;(define-key evil-visual-state-map (kbd "<tab>") indent-region)
-
-(message "where the sun it never shines")
-
