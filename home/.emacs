@@ -117,26 +117,38 @@
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 (add-to-list 'load-path "~/.emacs.d/themes/")
 
-;Commands
-; (message "Loading settings")
-
-(defun command-line-diff (switch)
-  (let ((file1 (pop command-line-args-left))
-        (file2 (pop command-line-args-left)))
-    (ediff file1 file2)))
-
-(add-to-list 'command-switch-alist '("diff" . command-line-diff))
-
-(defun indent-buffer ()
-  (interactive)
-  (save-excursion
-    (indent-region (point-min) (point-max) nil)))
-
 ;; Broken
 ;(defun toggle-fundamental-mode ()
 ;  (interactive)
 ;  (cond ((not (eq major-mode "fundamental-mode")) (fundamental-mode))
 ;        (t (normal-mode))))
+
+; extra commands
+
+(defun byte-recompile-smart ()
+  (interactive)
+  (byte-recompile-directory (expand-file-name "~/.emacs.d") 0))
+
+(defun my-reload-emacs-configuration ()
+  (interactive)
+  (load-file "~/.emacs"))
+
+(defun command-line-diff (switch)
+  (let ((file1 (pop command-line-args-left))
+        (file2 (pop command-line-args-left)))
+    (ediff file1 file2)))
+(add-to-list 'command-switch-alist '("diff" . command-line-diff))
+
+(defun command-line-merge (switch)
+  (let ((file1 (pop command-line-args-left))
+        (file2 (pop command-line-args-left)))
+    (ediff-merge-files file1 file2)))
+(add-to-list 'command-switch-alist '("merge" . command-line-merge))
+
+(defun indent-buffer ()
+  (interactive)
+  (save-excursion
+    (indent-region (point-min) (point-max) nil)))
 
 ;Keys
 ;; Unbind 'C-x f'
@@ -176,7 +188,8 @@
 ;Configuration
 
 (setq x-alt-keysym 'meta)
-
+(setq next-line-add-newlines nil)
+(setq fill-column 120)
 (setq inhibit-startup-screen t)
 (setq inhibit-startup-message t)
 (setq delete-trailing-lines nil)
@@ -262,15 +275,5 @@
 (setq org-src-fontify-natively t)
 ;; Don't prompt before running code in org
 (setq org-confirm-babel-evaluate nil)
-
-; extra commands
-
-(defun byte-recompile-smart ()
-  (interactive)
-  (byte-recompile-directory (expand-file-name "~/.emacs.d") 0))
-
-(defun my-reload-emacs-configuration ()
-  (interactive)
-  (load-file "~/.emacs"))
 
 ; (message ".emacs'd.")
