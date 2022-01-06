@@ -113,8 +113,9 @@ C-x C-l."
     (kbd "<escape>") 'company-search-abort)
 
   ;; Make `company-mode' not show popup when not in supported state
-  (advice-add 'company-call-backend
-              :before-while 'evil-collection-company-supported-p))
+  ;(advice-add 'company-call-backend
+  ;            :before-while 'evil-collection-company-supported-p))
+  )
 
 
 (provide 'evil-collection-company)

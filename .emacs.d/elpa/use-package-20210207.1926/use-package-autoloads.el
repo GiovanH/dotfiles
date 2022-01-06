@@ -126,6 +126,16 @@ this file.  Usage:
 
 \(fn NAME &rest ARGS)" nil t)
 
+; HACK: Backport
+(defalias 'function-put
+  ;; We don't want people to just use `put' because we can't conveniently
+  ;; hook into `put' to remap old properties to new ones.  But for now, there's
+  ;; no such remapping, so we just call `put'.
+  #'(lambda (function prop value)
+      "Set FUNCTION's property PROP to VALUE.
+The namespace for PROP is shared with symbols.
+So far, FUNCTION can only be a symbol, not a lambda expression."
+      (put function prop value)))
 (function-put 'use-package 'lisp-indent-function '1)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "use-package-core" '("use-package-")))

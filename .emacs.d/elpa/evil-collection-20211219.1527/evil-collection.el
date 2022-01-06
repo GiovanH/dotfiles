@@ -672,6 +672,7 @@ forwarded to `require'."
          (file (expand-file-name
                 (format "modes/%s/evil-collection-%s" mode-name mode-name)
                 evil-collection-base-dir)))
+    ;(message "evil-require %s %s %s" feature file noerror)
     (require feature file noerror)))
 
 (declare-function evil-collection-unimpaired-setup "evil-collection-unimpaired")
@@ -693,13 +694,14 @@ instead of the modes in `evil-collection-mode-list'."
       (or (listp modes) (setq modes (list modes)))
     (setq modes evil-collection-mode-list))
   (dolist (mode modes)
+    ;(message "init-loading %s" mode)
     (let ((m mode)
           (reqs (list mode)))
       (when (listp mode)
         (setq m (car mode)
               reqs (cdr mode)))
       (dolist (req reqs)
-        (with-eval-after-load req
+        ;(eval-after-load req '(progn ; (with-eval-after-load req
           (evil-collection-require m)
           (funcall (intern (concat "evil-collection-" (symbol-name m)
                                    "-setup")))
@@ -708,7 +710,9 @@ instead of the modes in `evil-collection-mode-list'."
                    (symbol-value
                     (intern (format "evil-collection-%s-maps" m))))))
             (run-hook-with-args 'evil-collection-setup-hook
-                                m mode-keymaps))))))
+                                m mode-keymaps))
+          ;)) ; )
+        )))
   (when evil-collection-want-unimpaired-p
     (evil-collection-require 'unimpaired)
     (evil-collection-unimpaired-setup)))
