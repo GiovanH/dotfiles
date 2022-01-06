@@ -1,12 +1,12 @@
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
-(setq zenburn-override-colors-alist
+
+(unless window-system 
+  (setq zenburn-override-colors-alist
   '(
     ("zenburn-bg"       . "unspecified-bg")
    )
-)
+))
 (load-theme 'zenburn t)
-(unless window-system 
-  (set-face-attribute 'default nil :background "unspecified-bg"))
 
 (message "evil grows in the dark")
 

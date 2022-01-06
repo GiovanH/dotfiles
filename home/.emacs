@@ -67,16 +67,12 @@
   :commands (rainbow-mode))
 ; (autoload 'rainbow-mode "rainbow-mode" "rainbow-mode; displays colors inline" t)
 
-; (require 'powerline)
-; (powerline-default-theme)
-
 (setq tetris-score-file "~/.emacs.d/tetris-scores")
 (autoload 'tetris "tetris" "tetris major mode" t)
 
 (use-package which-key
   :config (which-key-mode t))
 
-; (use-package hydra)
 
 ;; fuzzy file finder
 (use-package fiplr
@@ -90,24 +86,6 @@
 ;load ztree and things that hook it (evil) when loading ztree-dir
 (autoload #'ztree-dir "ztree" nil t)
 
-;ido
-(use-package ido
-  :config '((ido-mode t)
-;;ido M-x
-            ; (global-set-key
-            ;  "\M-x"
-            ;  (lambda ()
-            ;    (interactive)
-            ;    (call-interactively
-            ;     (intern
-            ;      (ido-completing-read
-            ;       "M-x "
-            ;       (all-completions "" obarray 'commandp))))))
-           ))
-
-
-; (require 'ido)
-; (ido-mode t)
 
 ;;Helpful
 
