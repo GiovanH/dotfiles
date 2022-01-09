@@ -11,7 +11,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(flycheck-aspell flycheck-gradle flycheck-inline flycheck-mmark flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass gradle-mode terraform-doc async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree undo-fu anaconda-mode which-key magit helpful evil-collection)))
+   '(flycheck-aspell flycheck-inline flycheck-pyflakes flycheck-yamllint flymake-json flymake-sass async flycheck company-ansible company-lua company-nginx company-shell company-terraform company native-complete evil use-package fiplr ztree undo-fu anaconda-mode which-key magit helpful evil-collection)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -21,8 +21,8 @@
 
 (require 'package)
 (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/"))
-(setq package-check-signature nil)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa" . "https://stable.melpa.org/packages/"))
+; (setq package-check-signature nil)
 (package-initialize) ; require packages
 ;(package-install-selected-packages)
 
@@ -30,8 +30,8 @@
 (message "Loading modes")
 
 ;; org-mode is default mode for txt files
-(add-to-list 'auto-mode-alist '("\\.txt\\'" . org-mode))
-;(add-to-list 'auto-mode-alist '("\\.\\(org\\|org_archive\\|txt\\)$" . org-mode))
+;(add-to-list 'auto-mode-alist '("\\.txt\\'" . org-mode))
+(add-to-list 'auto-mode-alist '("\\.\\(org\\|org_archive\\)$" . 'org-mode))
 
 ;Async
 ;(autoload 'dired-async-mode "dired-async.el" nil t)
@@ -39,11 +39,6 @@
 ;(async-bytecomp-package-mode 1)
 
 (autoload 'edit-indirect "edit-indirect" "Indirect code editing" t)
-
-(use-package terraform-mode
-  :mode (("\\.hcl\\'" . hcl-mode)
-         ("\\.tfvars\\'" . terraform-mode)
-         ("\\.tf\\'" . terraform-mode)))
 
 (use-package jinja2-mode
   :mode ("\\.j2\\'" . jinja2-mode))
@@ -72,7 +67,6 @@
 
 (use-package which-key
   :config (which-key-mode t))
-
 
 ;; fuzzy file finder
 (use-package fiplr
@@ -263,17 +257,17 @@
 
 ;; Run/highlight code using babel in org-mode
 (with-eval-after-load 'org-mode
-  (use-package ob-async))
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '(
-   (python . t)
-   (shell . t)
-   ;; Include other languages here...
-   ))
-;; Syntax highlight in #+BEGIN_SRC blocks
-(setq org-src-fontify-natively t)
-;; Don't prompt before running code in org
-(setq org-confirm-babel-evaluate nil)
+  (use-package ob-async)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '(
+     (python . t)
+     (shell . t)
+     ;; Include other languages here...
+     ))
+  ;; Syntax highlight in #+BEGIN_SRC blocks
+  (setq org-src-fontify-natively t)
+  ;; Don't prompt before running code in org
+  (setq org-confirm-babel-evaluate nil))
 
 ; (message ".emacs'd.")
