@@ -20,6 +20,8 @@ alias python27="/cygdrive/c/Program\ Files/Python27/python2.exe"
 
 alias sudo="cygstart --action=runas"
 
+alias ps="ps -W"
+
 ## Use case-insensitive filename globbing
 shopt -s nocaseglob
 

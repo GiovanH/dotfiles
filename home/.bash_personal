@@ -1,21 +1,28 @@
 #!/bin/bash
 # Common functions
 
+alias jq="jq -C"
+
 # Emacs aliases
 alias emacsw=$(echo $(which emacs-w32 2>/dev/null) $(which emacs 2>/dev/null) | cut -d " " -f1)
-alias ec="emacsclient -nw --create-frame --alternate-editor=''"
 alias emacs="emacs -nw --no-splash"
 alias ev="emacs -l ~/.emacs.d/evil-init.el"
 alias evw="emacsw -l ~/.emacs.d/evil-init.el"
-# alias ev="emacsclient -nw --create-frame --alternate-editor='' -s evil-mode --eval \"(evil-mode)\""
-alias ol="emacs -f org-mode"
-alias emerge="emacs -f emerge-files-command"
-alias ediff="emacs -diff"
-alias dired="ev -f dired"
+
+function ensure_ev_daemon {
+    if [ "$(ps uxf | grep -E "emacs.+evil-init" | grep "daemon")" ]; then
+        :
+    else
+        ev --daemon
+    fi
+}
+
+alias ec="ensure_ev_daemon; emacsclient --create-frame --alternate-editor='' -nw"
+alias ecw="ensure_ev_daemon; emacsclient --create-frame --alternate-editor=''"
+
 alias find="/bin/find"
 
 alias which="alias | /usr/bin/which -i --all"
-
 alias rsync="rsync -hir --executability --times"
 
 alias delete_empty_dirs="/bin/find * -type d -empty -exec echo \"rmdir '{}'\" \; -delete"
@@ -58,5 +65,6 @@ if [[ -d "$HOME/.nvm" ]]; then
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
         [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
         echo "nvm initialized"
+        nvm $@
     }
 fi
