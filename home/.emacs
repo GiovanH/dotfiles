@@ -160,6 +160,7 @@
 ;(global-set-key (kbd "<tab>") 'indent-region)
 (global-set-key (kbd "C-c r") 'replace-regexp)
 
+(global-set-key (kbd "<f5>") 'revert-buffer)
 ;Hooks
 
 ;Delete trailing whitespace
@@ -186,10 +187,10 @@
 (setq fill-column 120)
 (setq inhibit-startup-screen t)
 (setq inhibit-startup-message t)
-(setq delete-trailing-lines nil)
+(setq delete-trailing-lines t)
+(setq next-line-add-newlines nil)
 (setq-default indent-tabs-mode nil)     ; Use spaces instead of tabs
 (setq-default tab-width 4)
-(setq next-line-add-newlines t)         ; Add newline when at buffer end
 (setq message-log-max 10000)            ; Increase number of undo
 (setq undo-limit 10000)                 ; Increase number of undo
 (setq vc-follow-symlinks t)
