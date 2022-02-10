@@ -4,7 +4,7 @@
 alias jq="jq -C"
 
 # Emacs aliases
-alias emacsw=$(echo $(which emacs-w32 2>/dev/null) $(which emacs 2>/dev/null) | cut -d " " -f1)
+alias emacsw=$(echo $(/bin/which emacs-w32 2>/dev/null) $(/bin/which emacs 2>/dev/null) | cut -d " " -f1)
 alias emacs="emacs -nw --no-splash"
 alias ev="emacs -l ~/.emacs.d/evil-init.el"
 alias evw="emacsw -l ~/.emacs.d/evil-init.el"
