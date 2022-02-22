@@ -12,3 +12,10 @@
 	sshCommand = ssh -i ~/.ssh/id_rsa
 [ssh]
 	key = ~/.ssh/id_rsa
+[log]
+    decorate = true
+[alias]
+    ltree = log --all --graph --abbrev-commit --decorate --format=format:'%C(yellow)%h%C(reset) - %C(dim green)%<(12,trunc)(%ci)%C(reset) %C(white)%s%C(reset) %C(dim w\
+hite)- %an%C(reset)%C(auto)%d%C(reset)'
+[merge]
+    conflictstyle = diff3

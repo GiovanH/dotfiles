@@ -24,8 +24,30 @@ alias find="/bin/find"
 
 alias which="alias | /usr/bin/which -i --all"
 alias rsync="rsync -hir --executability --times"
+alias find="bfs"
 
-alias delete_empty_dirs="/bin/find * -type d -empty -exec echo \"rmdir '{}'\" \; -delete"
+function delete_empty_dirs {
+    /bin/find . -not -path '*/.*' -type d -empty -exec echo "rmdir '{}'" \; -delete;
+}
+export -f delete_empty_dirs
+function ff { bfs -iname "*$@*"; }
+
+alias tsv="column -t -s $'\t'" # Pretty-print tsv data
+
+# Execute command $1 in directory $2..$N, aborting on non-zero return.
+function dmap {( # set -e  # fail early
+    cmd="$1"
+    shift
+
+	for path in "$@"; do
+        echo $path
+        pushd "$path"
+        "$cmd"
+        test $? -gt 0 && pwd && return
+    popd
+    done
+)}
+export -f dmap
 
 function git_clone_with_user {
     REPO=$@

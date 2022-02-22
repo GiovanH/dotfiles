@@ -27,3 +27,11 @@ shopt -s nocaseglob
 
 ## Ignore carriage returns.
 (set -o igncr) 2>/dev/null && set -o igncr; # comment is needed
+
+function ensure_ev_daemon {
+    if [ "$(ps uxf | grep -E emacs)" ]; then
+        :
+    else
+        ev --daemon
+    fi
+}
