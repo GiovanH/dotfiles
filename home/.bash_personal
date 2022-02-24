@@ -35,7 +35,7 @@ function ff { bfs -iname "*$@*"; }
 alias tsv="column -t -s $'\t'" # Pretty-print tsv data
 
 # Execute command $1 in directory $2..$N, aborting on non-zero return.
-function dmap {( # set -e  # fail early
+function dmap {( set -e  # fail early
     cmd="$1"
     shift
 
@@ -78,6 +78,7 @@ function react() {
         done
     fi
 }
+export -f react
 
 # Node version manager lazy-loader
 

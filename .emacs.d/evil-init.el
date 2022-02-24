@@ -1,14 +1,32 @@
+(message "evil grows in the dark")
+
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 
-(unless window-system 
-  (setq zenburn-override-colors-alist
-  '(
-    ("zenburn-bg"       . "unspecified-bg")
-   )
+(setq zenburn-use-variable-pitch t)
+(setq zenburn-scale-org-headlines t)
+(setq zenburn-scale-outline-headlines t)
+
+(unless window-system
+  (add-to-list 'zenburn-override-colors-alist
+    '("zenburn-bg"       . "unspecified-bg")
 ))
 (load-theme 'zenburn t)
+(setq zenburn-override-colors-alist
+  '(
+    ("zenburn-bg-1"       . "#2b2b2b") ;Active mode line
+    ("zenburn-bg-05"      . "#383838") ;Inactive mode line
+   )
+)
+(add-hook 'highlight-indentation-mode-hook (
+    lambda ()
+    (set-face-background 'highlight-indentation-face "#383838")
+    (set-face-background 'highlight-indentation-current-column-face "#2b2b2b")
+))
 
-(message "evil grows in the dark")
+(setq highlight-indentation-blank-lines t)
+(autoload 'highlight-indentation-mode "highlight-indentation" "" t)
+
+
 
 ; (add-to-list 'load-path "~/.emacs.d/evil/")
 

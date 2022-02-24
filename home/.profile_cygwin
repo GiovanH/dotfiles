@@ -16,6 +16,8 @@ alias python36="/cygdrive/c/Program\ Files/Python36/python.exe"
 alias python2="/cygdrive/c/Program\ Files/Python27/python2.exe"
 alias python27="/cygdrive/c/Program\ Files/Python27/python2.exe"
 
+alias killall="taskkill /f /im"
+
 # Cygwin
 
 alias sudo="cygstart --action=runas"

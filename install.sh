@@ -27,3 +27,9 @@ for dotdir in .emacs.d; do
     ls -al ${dest}
     echo pass
 done
+
+
+if [[ "${HOST_FAMILY}" == "CYGWIN" ]]; then
+    rm ~/.gitconfig; cp -v ${wd}/home/.gitconfig ~/.gitconfig
+    rm ~/.emacs; cp -v ${wd}/home/.emacs ~/.emacs
+fi

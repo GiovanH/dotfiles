@@ -72,13 +72,48 @@
 (use-package fiplr
   :config
   (setq fiplr-root-markers '(".git" ".svn"))
-  (setq fiplr-ignored-globs '((directories (".git" ".svn"))
+  (setq fiplr-ignored-globs '((directories (".git" ".svn" "node_modules"))
                               (files ("*.jpg" "*.png" "*.zip" "*~"))))
   (global-set-key (kbd "C-c p p") 'fiplr-find-file)
   (global-set-key (kbd "C-x p p") 'fiplr-find-file))
 
+(defvar hs-special-modes-alist
+  (mapcar 'purecopy
+  '((c-mode "{" "}" "/[*/]" nil nil)
+    (c++-mode "{" "}" "/[*/]" nil nil)
+    (bibtex-mode ("@\\S(*\\(\\s(\\)" 1))
+    (java-mode "{" "}" "/[*/]" nil nil)
+    (js-mode "{" "}" "/[*/]" nil))))
+; (global-set-key (kbd "C-k C-j") 'hs-show-all)
+(global-set-key (kbd "C-{") 'hs-hide-block)
+(global-set-key (kbd "C-}") 'hs-show-block)
+(global-set-key (kbd "<C-return>") 'toggle-hiding)
+(add-hook 'prog-mode-hook 'hs-minor-mode)
+
 ;load ztree and things that hook it (evil) when loading ztree-dir
 (autoload #'ztree-dir "ztree" nil t)
+
+(require 'hideshow)
+;(add-to-list 'hs-special-modes-alist '(my-mode "{{" "}}" ...))
+(add-to-list 'hs-special-modes-alist '(hcl-mode "{{" "}}" "//" nil nil))
+; (global-set-key (kbd "C-k C-j") 'hs-show-all)
+(defun +data-hideshow-forward-sexp (arg)
+  (let ((start (current-indentation)))
+    (forward-line)
+    (unless (= start (current-indentation))
+      (require 'evil-indent-plus)
+      (let ((range (evil-indent-plus--same-indent-range)))
+        (goto-char (cadr range))
+        (end-of-line)))))
+(add-to-list 'hs-special-modes-alist
+         '(yaml-mode \\s-*\\_<\\(?:[^:]+\\)\\_> "" "#" +data-hideshow-forward-sexp nil))
+(global-set-key (kbd "C-!") 'hs-hide-level)
+(global-set-key (kbd "C-{") 'hs-hide-block)
+(global-set-key (kbd "C-}") 'hs-show-block)
+(global-set-key (kbd "<C-return>") 'hs-toggle-hiding)
+
+(add-hook 'prog-mode-hook         'hs-minor-mode)
+(add-hook 'yaml-mode-hook         'hs-minor-mode)
 
 
 ;;Helpful
@@ -161,6 +196,9 @@
 (global-set-key (kbd "C-c r") 'replace-regexp)
 
 (global-set-key (kbd "<f5>") 'revert-buffer)
+
+(global-set-key (kbd "<f9>") 'sort-lines)
+
 ;Hooks
 
 ;Delete trailing whitespace
