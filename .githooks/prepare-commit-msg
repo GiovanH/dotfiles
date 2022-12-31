@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+from __future__ import print_function
+
+import sys, os, re
+from subprocess import check_output
+
+# Collect the parameters
+commit_msg_filepath = sys.argv[1]
+
+commit_type = ''
+if len(sys.argv) > 2:
+    commit_type = sys.argv[2]
+
+commit_hash = ''
+if len(sys.argv) > 3:
+    commit_hash = sys.argv[3]
+
+try:
+    branch = check_output(['git', 'symbolic-ref', '--short', 'HEAD']).strip()
+    # print("prepare-commit-msg: On branch '%s'" % branch)
+
+    # Populate the commit message with the issue #, if there is one
+    match = re.match(r'.+?/([A-Z]+-\d+)-?', branch)
+    with open(commit_msg_filepath, 'r+') as f:
+        content = f.read()
+        if match:
+            jira_id = match.group(1)
+            if not content.strip().startswith(jira_id):
+                f.seek(0, 0)
+                f.write("# %s \n%s" % (jira_id, content))
+        else:
+            message = "Auto-jira: Couldn't match branch %s" % (branch,)
+            # Disabled, since git is bad at respecting comments.
+            # print(message)
+            pass
+
+except Exception as e:
+    print(e)
+    pass

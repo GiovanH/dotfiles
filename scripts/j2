@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import json
+import os
+import jinja2
+
+EXTENSIONS = ["jinja2.ext.loopcontrols", "jinja2.ext.debug"]
+NO_CLOBBER = False
+PICO8_MODE = False
+
+def render_template(template_path, input_data, out_path):
+    exopts = {}
+    if PICO8_MODE:
+        exopts = {
+            "variable_start_string": '"{{',
+            "variable_end_string": '}}"',
+            "line_statement_prefix": "--%"
+        }
+    print("Rendering template '{}' to '{}'".format(template_path, out_path))
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(os.path.dirname(template_path)),
+        extensions=EXTENSIONS,
+        keep_trailing_newline=True,
+        **exopts
+    )
+
+    # Add environ global
+    os.environ["UID"] = str(os.getuid())
+    env.globals["environ"] = lambda key: str(os.environ.get(key))
+    env.globals["get_context"] = lambda: input_data
+
+    return env.get_template(os.path.basename(template_path)).render(input_data)
+
+
+def auto_render_template(file_path, input_data):
+    out_path, dotj2 = os.path.splitext(file_path)
+    if dotj2 != ".j2":
+        raise ValueError("File '{}' is not a jinja2 template ending with .j2".format(file_path))
+    if os.path.isfile(out_path) and NO_CLOBBER:
+        raise IOError("File exists: '{}' and no-clobber is {}.".format(out_path, NO_CLOBBER))
+    with open(out_path, 'wb') as fp:
+        fp.write(render_template(file_path, input_data, out_path).encode('utf-8'))
+
+
+def parse_args():
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Render j2 templates",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument('input_files', help="Input files in the form of *.ext.j2", nargs='+')
+    parser.add_argument('--data', help="JSON data to use as additional input. Can optionally be a path to a file.", default={})
+    parser.add_argument('--extensions', help="jinja2 extensions to load", default=EXTENSIONS)
+    parser.add_argument('--no-clobber', action='store_true', help="If set, don't overwrite files.", default=False)
+    parser.add_argument('--pico8', action='store_true', help="Use alternate quote-based syntax", default=False)
+    return parser.parse_args()
+
+
+def main():
+    global EXTENSIONS
+    global NO_CLOBBER
+    global PICO8_MODE
+    args = parse_args()
+
+    EXTENSIONS = args.extensions
+    NO_CLOBBER = args.no_clobber
+    PICO8_MODE = args.pico8
+    input_data = {}
+    if args.data:
+        if os.path.isfile(args.data):
+            with open(args.data, 'rb') as fp:
+                input_data = json.loads(fp.decode('utf-8'))
+        else:
+            input_data = json.loads(args.data)
+
+    for file in args.input_files:
+        try:
+            input_data.update({
+                '_filepath': os.path.normpath(file),
+                '_pathsplit': os.path.split(file),
+                '_splitext': os.path.splitext(file)
+            })
+            auto_render_template(file, input_data)
+        except IOError as e:
+            print(e)
+            continue
+
+
+if __name__ == "__main__":
+    main()

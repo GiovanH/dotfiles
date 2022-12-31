@@ -1,0 +1,314 @@
+#!/bin/bash
+# Common functions
+
+alias tsv="column -t -s $'\t'" # Pretty-print tsv data
+alias csv="column -t -s ," # Pretty-print csv data
+alias rrsync="rsync -hir --executability --times" # rsync with defaults
+# recursively grep a terragrunt directory, excluding junk
+alias tgrep="grep -r --exclude-dir .terragrunt-cache --exclude \"*.log\""
+
+alias killall="killall -u $USER" # multiuser-safe killall
+
+# This violates my "no alias just for some standard switches" rule but I consistently forget these commands so I'm documenting them
+# Perl printwhile program, equivalent to sed -E
+alias psed="perl -p -e"
+# perl printwhile program inplace, equivalent to sed -i
+alias psedi="perl -pi -e"
+
+# used for password generation, various
+export WORDLIST="/usr/share/dict/words"
+
+# Colorize stderr
+colorerr() {
+  set -o pipefail
+  "$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2)
+}
+
+# alias find="/bin/find"
+[[ -d "$(which bfs 2>/dev/null)" ]] && alias find="bfs"
+
+# Fast find file by partial name
+ff() { find . -iname "*${@}*"; }
+
+# Magic comments that show up in `type`
+eg() { return; }
+rem() { return; }
+
+# Execute command $1 in directory $2..$N, aborting on non-zero return.
+# This can be treated as a generic version of --terragrunt-working-dir that loops automatically.
+dmap() {( # set -e  # fail early
+    cmd="$1"
+    shift # pop command from arg list
+    for path in $*; do
+        pushd "$path"
+        $cmd
+        test $? -gt 0 && pwd && read -n 1 -p "Ctrl+C to quit, any other key to continue. "
+	    popd &>/dev/null
+    done
+)}
+
+# Unified diff piped into vim for colouring.
+vdiff() { diff --unified $@ | vim -R - ; }
+
+perlmatch() {
+  pattern=$1
+  format=$2
+  file=$3
+  if [ -z "$3" ]; then
+    echo "perlmatch: match and format patterns with perl, like grep"
+    echo ""
+    echo " Usage: perlmatch [pattern|expression] [format] [file]"
+    echo "   e.g. perlmatch '/(.+)=(.+)/' '\$1: \$2' ~/.gradle/gradle.properties"
+    echo "     or perlmatch '/(?<key>.+)=(?<value>.+)/' '$+{key}: $+{value}' ~/.gradle/gradle.properties"
+    echo ""
+    return
+  fi
+  cat $file | perl -n -e "print \"$format\n\" if $pattern"
+}
+
+# Git magic
+
+# Squash fixup commits between head and the latest push
+alias autosquash='git rebase --interactive --autosquash $(git rev-parse origin/HEAD)'
+
+gm_rm_their_deletions()  { git rm  $(git status -s | grep -Po '^.D \K(.+)$'); }
+gm_rm_our_additions()    { git add $(git status -s | grep -Po '^AU \K(.+)$'); }
+gm_add_their_additions() { git add $(git status -s | grep -Po '^.A \K(.+)$'); }
+gm_wassup() { tail $(git status -s | grep -Po '^(.D|AU|A.) \K(.+)$'); }
+
+gm_smerge_all() {
+  for f in $(git status -s | grep -Po '^(AA|UU) \K(.+)$'); do
+    smerge $f
+  done
+}
+
+git_clone_or_update() {
+  eg Clone a repo, or pull-update it if it already exists.
+  repo=$1
+  autodest=${repo##*/} # ## delete longest match of pattern from start
+  autodest=${autodest%.git} # %  delete shortest match of pattern from end
+  gitdest=${2:-$autodest}
+  git clone $repo $gitdest \
+    || (pushd $gitdest && git pull && popd)
+  return 0
+}
+
+ddimage () {( set -e
+    target_drive=${target_drive:-"\\\\Deep16/Backup/"}
+    if [ -z "$1" -o -z "$2" ]; then
+        echo "Take a compressed .ddimg.gz backup of a device and save it to \$target_drive='$target_drive'"
+        echo "Usage: ddimage [device] [label]"
+        echo "i.e.   ddimage /dev/sde rpi_backup"
+        echo "Get partitions from 'mount' or 'cat /proc/partitions'"
+        return
+    fi
+    device=$1
+    label=$2
+    outfile="${target_drive}/$(date '+%Y-%m-%d')_${label}.ddimg.gz"
+    echo $outfile
+    if [ -f "$outfile" ]; then
+        echo "File exists! Aborting."
+        return
+    fi
+    dd if=$device bs=64K status=progress | gzip -c > "$outfile"
+)}
+
+
+pdiff() {
+    # Diff pcloud "conflicted" files
+    orig="$1"
+    last="$orig"
+    find -iname "*$orig* (conflicted*" | while read file; do
+        echo "=============="
+        echo "$last -> $file"
+        diff "$last" "$file"
+        last="$file"
+    done
+}
+
+# Run ffmpeg at a calculated bitrate to make 8mb mp4s.
+function discordmp4 {
+    if [ -z "$1" ]; then
+        echo "Usage: discordmp4 <filepath> [target size in mb (default 8)]"
+        return
+    fi
+    mb=${2:-8} # default to 8 mb
+    secs=$(ffprobe.exe -i "$1" -show_entries format=duration -of 'csv=p=0' 2>/dev/null)
+    akbs=$(echo "($mb*2500)/$secs" | bc)
+    vkbs=$(echo "($mb*6500)/$secs" | bc)
+    echo "Audio: ${akbs}k, Video: ${vkbs}k"
+    ffmpeg -i "$1" -b:v ${vkbs}k -b:a ${akbs}k "$1_${mb}mb.mp4"
+}
+
+
+# function git_clone_with_user {
+#     REPO=$@
+#     REPO_NAME=$(echo $REPO | sed -E "s/.+\/([^\/]+)\/([^\/]+)/\2/g")
+#     USER_NAME=$(echo $REPO | sed -E "s/.+\/([^\/]+)\/([^\/]+)/\1/g")
+#     echo Repo URL: $REPO
+#     echo Username: $USER_NAME
+#     echo Reponame: $REPO_NAME
+#     CMD="git clone $REPO \"./$REPO_NAME @ $USER_NAME/\""
+#     echo $CMD
+#     git clone $REPO "./$REPO_NAME @ $USER_NAME/"
+# }
+
+delete_empty_dirs() {
+    find . -not -path '*/.*' -type d -empty -exec echo "rmdir '{}'" \; -delete;
+}
+export -f delete_empty_dirs
+
+function git_log_search {
+    git log -S'$@' -p | grep -i '$@'
+}
+
+
+react() {
+    if [ -z "$1" -o -z "$2" ]; then
+        echo "Usage: react <[./]file-to-watch> <[./]action> <to> <take>"
+    elif ! [ -r "$1" ]; then
+        echo "Can't react to $1, permission denied"
+    else
+        TARGET="$1"; shift
+        ACTION="$@"
+        while sleep 1; do
+            ATIME=$(stat -c %Z "$TARGET")
+            if [[ "$ATIME" != "${LTIME:-}" ]]; then
+                LTIME=$ATIME
+                echo -n "$(date -Iminutes) "
+                $ACTION
+            fi
+        done
+    fi
+}
+export -f react
+
+
+# Emacs stuff
+alias emacsw=$(echo $(/bin/which emacs-w32 2>/dev/null) $(/bin/which emacs 2>/dev/null) | cut -d " " -f1) # Windowed
+alias emacs="emacs -nw --no-splash" # Terminal
+
+# Use emacs to copy the contents of a file into the X clipboard
+copyf() {
+    if [ -z "$1" ]; then echo "Usage: copyf <source_text_file>"; return; fi
+    emacsw -Q --eval '(progn
+      (setq x-select-enable-clipboard-manager t)
+      (switch-to-buffer (generate-new-buffer "clip"))
+      (insert-file-contents "'$1'")
+      (mark-whole-buffer)
+      (defun docopy ()
+       (interactive)
+       (kill-new (buffer-string))
+       (x-select-text (buffer-string))
+       (sit-for 1) ; wait to flush ???
+       (save-buffers-kill-terminal) ; Emacs takes a second to "flush" to the clipboard
+      )
+      (local-set-key "n" '\''docopy) ; needs interactive window ???
+      (message "Press n to copy and exit.")
+    )'
+}
+
+# Use emacs to write the contents of the X clipboard to a file
+pastef() {
+    if [ -z "$1" ]; then echo "Usage: w/ text in your clipboard, pastef <dest_text_file>"; return; fi
+    emacsw -Q --eval '(progn
+      (find-file "'$1'")
+      (yank)
+      (save-buffer)
+      (kill-emacs)
+    )'
+    wc $1
+    tail -n 2 $1 | cut -c 1-80 -
+}
+
+# Binary versions using base64
+copybf() {
+  # Powershell:
+  # using namespace System.Management.Automation.Host
+  #
+  # param([Parameter(Mandatory)]$filename)
+  # [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
+  #
+  # write-host "Encoding binary text"
+  # $clip = [convert]::ToBase64String((Get-Content -path $filename -Encoding byte))
+  #
+  # write-host "Writing to clipboard"
+  # Set-Clipboard -Value $clip
+
+  if [ -z "$1" ]; then echo "Usage: copybf <source_binary_file>"; return; fi
+  base64 "$1" > "$1".b64
+  copyf "$1".b64
+  rm "$1".b64
+}
+pastebf() {
+  # Powershell:
+  # using namespace System.Management.Automation.Host
+  #
+  # param([Parameter(Mandatory)]$filename)
+  # [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
+  #
+  # write-host "Decoding binary text"
+  # $bytes = [Convert]::FromBase64String((Get-Clipboard))
+  #
+  # write-host "Writing to ($filename)"
+  # [IO.File]::WriteAllBytes($filename, $bytes)
+
+
+  if [ -z "$1" ]; then echo "Usage: w/ b64 text in your clipboard, pastebf <dest_binary_file>"; return; fi
+  pastef "$1".b64
+  base64 --decode "$1".b64 > "$1"
+  rm "$1".b64
+}
+copytardir() {
+  tar -cvzf - $@ --exclude tardir.b64 | base64 > tardir.b64
+  copyf tardir.b64
+  rm tardir.b64
+}
+
+# Use emacs smerge/ediff mode to resolve a git conflicted file.
+smerge() {( set -ev
+    if [ -z "$1" ]; then
+        echo "Usage: smerge <conflicted_file>"
+        echo "Automatically quits emacs and 'git add's the file when ediff is done."
+        return
+    fi
+    emacs $1 --eval "(progn
+      (add-hook 'ediff-after-quit-hook-internal 'save-buffers-kill-emacs)
+      (smerge-mode)
+      (smerge-ediff)
+    )"
+    git add $1
+)}
+
+ediff() {
+    if [ -z "$1" -o -z "$2" ]; then echo "Usage: ediff <file_A> <file_B>"; return; fi
+    emacs=emacs
+
+    $emacs -nw --eval "(progn
+        (add-hook 'ediff-after-quit-hook-internal 'save-buffers-kill-emacs)
+        (ediff-files \"$1\" \"$2\")
+    )";
+}
+
+# Log screen session directly to html ansi
+ansilog() {
+    screen -L $@
+    cat screenlog.0 | ansi2html.sh > screenlog.html
+    ls -al screenlog.html
+}
+
+# Node version manager lazy-loader
+if [[ -d "$HOME/.nvm" ]]; then
+    nvm() {
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+        echo "nvm initialized"
+        nvm $@
+    }
+fi
+
+# Emacs aliases
+alias ev="emacs -l ~/.emacs.d/ev-init.el"
+alias evw="emacsw -l ~/.emacs.d/ev-init.el"
+

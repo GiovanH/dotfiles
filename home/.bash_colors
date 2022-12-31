@@ -1,0 +1,89 @@
+#!/bin/bash
+export COLOR_BOLD='\033[1m'
+export COLOR_NC='\e[0m' # No Color
+export COLOR_WHITE='\e[1;37m'
+export COLOR_BLACK='\e[0;30m'
+export COLOR_BLUE='\e[0;34m'
+export COLOR_LIGHT_BLUE='\e[1;34m'
+export COLOR_GREEN='\e[0;32m'
+export COLOR_LIGHT_GREEN='\e[1;32m'
+export COLOR_CYAN='\e[0;36m'
+export COLOR_LIGHT_CYAN='\e[1;36m'
+export COLOR_RED='\e[0;31m'
+export COLOR_LIGHT_RED='\e[1;31m'
+export COLOR_PURPLE='\e[0;35m'
+export COLOR_LIGHT_PURPLE='\e[1;35m'
+export COLOR_BROWN='\e[0;33m'
+export COLOR_YELLOW='\e[1;33m'
+export COLOR_GRAY='\e[0;30m'
+export COLOR_LIGHT_GRAY='\e[0;37m'
+
+export PSCOLOR_BOLD='\['$COLOR_BOLD'\]'
+export PSCOLOR_NC='\['$COLOR_NC'\]'
+export PSCOLOR_WHITE='\['$COLOR_WHITE'\]'
+export PSCOLOR_BLACK='\['$COLOR_BLACK'\]'
+export PSCOLOR_BLUE='\['$COLOR_BLUE'\]'
+export PSCOLOR_LIGHT_BLUE='\['$COLOR_LIGHT_BLUE'\]'
+export PSCOLOR_GREEN='\['$COLOR_GREEN'\]'
+export PSCOLOR_LIGHT_GREEN='\['$COLOR_LIGHT_GREEN'\]'
+export PSCOLOR_CYAN='\['$COLOR_CYAN'\]'
+export PSCOLOR_LIGHT_CYAN='\['$COLOR_LIGHT_CYAN'\]'
+export PSCOLOR_RED='\['$COLOR_RED'\]'
+export PSCOLOR_LIGHT_RED='\['$COLOR_LIGHT_RED'\]'
+export PSCOLOR_PURPLE='\['$COLOR_PURPLE'\]'
+export PSCOLOR_LIGHT_PURPLE='\['$COLOR_LIGHT_PURPLE'\]'
+export PSCOLOR_BROWN='\['$COLOR_BROWN'\]'
+export PSCOLOR_YELLOW='\['$COLOR_YELLOW'\]'
+export PSCOLOR_GRAY='\['$COLOR_GRAY'\]'
+export PSCOLOR_LIGHT_GRAY='\['$COLOR_LIGHT_GRAY'\]'
+
+function colordemo {
+  e="\033["
+  vline=$(tput smacs 2>/dev/null; printf 'x'; tput rmacs 2>/dev/null)
+  [ "$vline" = "x" ] && vline="|"
+
+  #printf "${e}4m%80s${e}0m\n"
+  printf "${e}1;4mf\\\\b${e}0m${e}4m none  white    black     red     \
+green    yellow   blue    magenta    cyan  ${e}0m\\n"
+
+  rows='brgybmcw'
+
+  for f in 0 7 `seq 6`; do
+    no=""; bo=""; p=""
+    for b in n 7 0 `seq 6`; do
+      co="3$f"; [ $b = n ] || co="$co;4$b"
+      no="${no}${e}${co}m  ${p}${co} ${e}0m"
+      bo="${bo}${e}1;${co}m${p}1;${co} ${e}0m"
+      p=" "
+    done
+    fc=$(echo $rows | cut -c$((f+1)))
+    printf "$fc $vline$no\nb$fc$vline$bo\n"
+  done
+
+  for fgbg in 38 48 ; do # Foreground / Background
+    for color in {0..255} ; do # Colors
+      # Display the color
+      printf "\e[${fgbg};5;%sm  %3s  \e[0m" $color $color
+      # Display 6 colors per lines
+      if [ $((($color + 1) % 6)) == 4 ] ; then
+        echo # New line
+      fi
+    done
+    echo # New line
+  done
+}
+
+export SYMBOL_RARR='\u25B6'
+export SYMBOL_DETACHED='\u2693'
+export SYMBOL_AHEAD='\u2B06'
+export SYMBOL_BEHIND='\u2B07'
+export SYMBOL_STAGED='\u2714'
+export SYMBOL_CHANGED='\u270E'
+export SYMBOL_CONFLICTED='\u273C'
+export SYMBOL_STASH='\u2398'
+export SYMBOL_GIT='\uE0A0'
+export SYMBOL_HG='\u263F'
+export SYMBOL_BZR='\u2B61\u20DF'
+export SYMBOL_FOSSIL='\u2332'
+export SYMBOL_SVN='\u2446'
+

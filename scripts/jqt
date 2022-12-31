@@ -1,0 +1,18 @@
+#!/bin/bash
+# Convert jq output to a formatted table. Pipe in JSON, provide headers as args.
+# >>> echo '[{"name": "alice", "fish": 2}, {"name": "bob", "fish": 0}]' | jqt name fish
+# name   fish
+# alice  2
+# bob    0
+
+QUERY=$(python3 -c "$(cat <<EOF
+import argparse
+import json
+import sys
+args = sys.argv[1:]
+p2 = ", ".join('."{}"'.format(a) for a in args)
+print("(" + json.dumps(args) + " | (.)), (.[] | [" + p2 + "]) | @tsv")
+EOF
+)" "$@")
+
+jq -r "$QUERY" | column -t -s $'\t'

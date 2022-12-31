@@ -1,0 +1,24 @@
+# This is Git's per-user configuration file.
+[core]
+	autocrlf = false
+	excludesfile = ~/.gitignore
+	hooksPath = ~/.githooks
+	sshCommand = ssh -i ~/.ssh/id_rsa
+[ssh]
+	key = ~/.ssh/id_rsa
+[log]
+	decorate = true
+[alias]
+    extend = commit --amend
+	ltree = log --all --graph --abbrev-commit --decorate --format=format:'%C(yellow)%h%C(reset) - %C(dim green)%<(12,trunc)(%ci)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)'
+[merge]
+	conflictstyle = diff3
+[fetch]
+	prune = true
+[color]
+	ui = true
+[filter "lfs"]
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
