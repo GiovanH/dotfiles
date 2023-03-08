@@ -22,46 +22,25 @@ pathmunge () {
 }
 
 # Unix settings
-
 export LESS="--chop-long-lines --RAW-CONTROL-CHARS" # see LESS(1)
 
 # Use standard blues
 export LS_COLORS=$(echo $LS_COLORS | sed 's/=38;5;27/=34;5;27/g')
 
-# Default to human readable figures
-# alias df='df -h'
-# alias du='du -h'
-#
 # Misc :)
-# alias less='less -r'                          # raw control characters
-alias whence='type -a'                        # where, of a sort
-# alias grep='grep --color'                     # show differences in colour
-# alias egrep='egrep --color=auto'              # show differences in colour
-# alias fgrep='fgrep --color=auto'              # show differences in colour
-#
-# Some shortcuts for different directory listings
-alias ls='ls -h --color=auto'                 # classify files in colour
-alias dir='ls --color=auto --format=vertical'
-# alias vdir='ls --color=auto --format=long'
-# alias ll='ls -l'                              # long list
-# alias la='ls -A'                              # all but . and ..
-# alias l='ls -CF'                              #
+alias whence='type -a' # where, of a sort
 
-# Umask
-#
-# /etc/profile sets 022, removing write perms to group + others.
-# Set a more restrictive umask: i.e. no exec perms for others:
-# umask 027
-# Paranoid: neither group nor others have any perms:
-# umask 077
+# Some shortcuts for different directory listings
+alias ls='ls -h --color=auto' # classify files in colour
+alias dir='ls --color=auto --format=vertical'
 
 # User bin, man, info
 
 pathmunge "${HOME}/dotfiles/scripts"
 
-[[ -d "${HOME}/bin" ]] && pathmunge "${HOME}/bin"
-[[ -d "${HOME}/foss/bin" ]] && pathmunge "${HOME}/foss/bin"
-[[ -d "${HOME}/.local/bin" ]] && pathmunge "${HOME}/.local/bin"
+pathmunge "${HOME}/bin"
+pathmunge "${HOME}/foss/bin"
+pathmunge "${HOME}/.local/bin"
 [[ -d "/usr/libexec/git-core" ]] && pathmunge "/usr/libexec/git-core" && export GIT_EXEC_PATH="/usr/libexec/git-core"
 [[ -d "${HOME}/foss/libexec/git-core" ]] && pathmunge "${HOME}/foss/libexec/git-core" && export GIT_EXEC_PATH=${HOME}/foss/libexec/git-core
 
@@ -70,24 +49,24 @@ MANPATH="${HOME}/man:${HOME}/.local/man:${MANPATH}"
 #[[ -d "${HOME}/info" ]] &&
 INFOPATH="${HOME}/info:${HOME}/.local/info:${INFOPATH}"
 
-[[ -d "${HOME}/foss/usr/include" ]] && CPATH="${HOME}/foss/usr/include:${CPATH}"
-[[ -d "${HOME}/.local/include" ]] && CPATH="${HOME}/.local/include:${CPATH}"
-[[ -d "${HOME}/.local/lib" ]] && LD_LIBRARY_PATH="${HOME}/.local/lib:${LD_LIBRARY_PATH}"
-[[ -d "${HOME}/foss/usr/lib" ]] && LD_LIBRARY_PATH="${HOME}/foss/usr/lib:${LD_LIBRARY_PATH}"
+CPATH="${HOME}/foss/usr/include:${CPATH}"
+CPATH="${HOME}/.local/include:${CPATH}"
+LD_LIBRARY_PATH="${HOME}/.local/lib:${LD_LIBRARY_PATH}"
+LD_LIBRARY_PATH="${HOME}/foss/usr/lib:${LD_LIBRARY_PATH}"
 
 # User functions
 
-source ~/.bash_colors
-[[ -f ${HOME}/.bash_personal ]] && . ${HOME}/.bash_personal
+sourceif () { [[ -f "$1" ]] && . "$1"; } # || echo "missing file $1"; }
+
+sourceif ${HOME}/.bash_colors
+sourceif ${HOME}/.bash_personal
 
 # Programmable completion enhancements
-[[ -f /etc/bash_completion ]] && . /etc/bash_completion
-[[ -f ${HOME}/.bash_completion ]] && . ${HOME}/.bash_completion
+sourceif /etc/bash_completion
+sourceif ${HOME}/.bash_completion
 
-for shellfile in ${HOME}/.local/share/completions/*sh
-do
-  [ -f "$shellfile" ] || continue
-  . $shellfile
+for shellfile in ${HOME}/.local/share/completions/*sh; do
+  sourceif $shellfile
 done
 
 # Bash options
@@ -124,9 +103,9 @@ export HOSTNAME_NICE="$(hostname -f 2>/dev/null || hostname 2>/dev/null || cat /
 HOST_FAMILY="UNK"
 PSCOLOR_HOST=$PSCOLOR_PURPLE
 
-[[ -f ~/.profile_local ]] && . "~/.profile_$(uname)"
-[[ -f ~/.profile_local ]] && . "~/.profile_${HOSTNAME_NICE}"
-[[ -f ~/.profile_local ]] && . ~/.profile_local
+sourceif "${HOME}/.profile_$(uname -o)"
+sourceif "${HOME}/.profile_${HOSTNAME_NICE}"
+sourceif "${HOME}/.profile_local"
 export HOST_FAMILY
 
 EXIT='?'

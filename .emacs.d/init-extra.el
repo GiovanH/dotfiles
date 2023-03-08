@@ -315,6 +315,9 @@
 (use-package dockerfile-mode
   :mode (("Dockerfile'" . dockerfile-mode)))
 
+(use-package pico8-mode
+  :mode (("\\.p8" . pico8-mode)))
+
 (use-package mustache-mode
   :mode (("\\.tcl'" . mustache-mode)))
 

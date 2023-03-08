@@ -35,16 +35,15 @@ eg() { return; }
 rem() { return; }
 
 # Execute command $1 in directory $2..$N, aborting on non-zero return.
-# This can be treated as a generic version of --terragrunt-working-dir that loops automatically.
 dmap() {( # set -e  # fail early
-    cmd="$1"
-    shift # pop command from arg list
-    for path in $*; do
-        pushd "$path"
-        $cmd
-        test $? -gt 0 && pwd && read -n 1 -p "Ctrl+C to quit, any other key to continue. "
-	    popd &>/dev/null
-    done
+  cmd="$1"
+  shift # pop command from arg list
+  for path in $*; do
+    pushd "$path"
+    $cmd
+    test $? -gt 0 && pwd && read -n 1 -p "Ctrl+C to quit, any other key to continue. "
+    popd &>/dev/null
+  done
 )}
 
 # Unified diff piped into vim for colouring.
@@ -115,15 +114,16 @@ ddimage () {( set -e
 
 
 pdiff() {
-    # Diff pcloud "conflicted" files
-    orig="$1"
-    last="$orig"
-    find -iname "*$orig* (conflicted*" | while read file; do
-        echo "=============="
-        echo "$last -> $file"
-        diff "$last" "$file"
-        last="$file"
-    done
+  # Diff pcloud "conflicted" files
+  # TODO use splitext
+  orig="$1"
+  last="$orig"
+  find -iwholename "*$orig* [conflicted*" | while read file; do
+    echo "=============="
+    echo "$last -> $file"
+    diff "$last" "$file"
+    last="$file"
+  done
 }
 
 # Run ffmpeg at a calculated bitrate to make 8mb mp4s.
@@ -139,19 +139,6 @@ function discordmp4 {
     echo "Audio: ${akbs}k, Video: ${vkbs}k"
     ffmpeg -i "$1" -b:v ${vkbs}k -b:a ${akbs}k "$1_${mb}mb.mp4"
 }
-
-
-# function git_clone_with_user {
-#     REPO=$@
-#     REPO_NAME=$(echo $REPO | sed -E "s/.+\/([^\/]+)\/([^\/]+)/\2/g")
-#     USER_NAME=$(echo $REPO | sed -E "s/.+\/([^\/]+)\/([^\/]+)/\1/g")
-#     echo Repo URL: $REPO
-#     echo Username: $USER_NAME
-#     echo Reponame: $REPO_NAME
-#     CMD="git clone $REPO \"./$REPO_NAME @ $USER_NAME/\""
-#     echo $CMD
-#     git clone $REPO "./$REPO_NAME @ $USER_NAME/"
-# }
 
 delete_empty_dirs() {
     find . -not -path '*/.*' -type d -empty -exec echo "rmdir '{}'" \; -delete;
