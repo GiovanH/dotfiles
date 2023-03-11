@@ -4,6 +4,20 @@
 ;; This is the default config file, run automatically every startup.
 ;; This includes general configuration and settings, and can be adjusted to taste.
 
+;;=====================================================================
+;;# backports
+
+(if (version< emacs-version "24.4") (progn
+  (message "oh no! i am old")
+  (defmacro with-eval-after-load (file &rest body)
+    "Execute BODY after FILE is loaded.
+    FILE is normally a feature name, but it can also be a file name,
+    in case that file does not provide any feature.  See `eval-after-load'
+    for more details about the different forms of FILE and their semantics."
+    (declare (indent 1) (debug t))
+    `(eval-after-load ,file (lambda () ,@body)))
+))
+
 ;;# Faces
 
 (custom-set-faces
@@ -23,15 +37,31 @@
   (require 'cl)
   (cl-find-if (lambda (f) (find-font (font-spec :name f))) fonts))
 
-(set-face-attribute 'default nil
-  :font (font-candidate "Consolas-12:weight=normal" "DejaVu Sans Mono-12:weight=normal")
-  :height 110)
+(ignore-errors
+  (set-face-attribute 'default nil
+    :font (font-candidate "Consolas-12:weight=normal" "DejaVu Sans Mono-12:weight=normal")
+    :height 110)
+  ;; (when (member "Noto Emoji" (font-family-list))
+  ;;   (set-fontset-font
+  ;;    t 'symbol (font-spec :family "Noto Emoji") nil 'prepend)
+  ;; )
+  ;; Test: ????
+)
 
-;; Try to enable unicode support
-(setq use-default-font-for-symbols nil)
-(set-fontset-font t 'unicode (face-attribute 'default :family))
-(set-fontset-font t '(#x1F3FB . #x1F6FF)
-  (font-spec :family "Noto Emoji Regular"))
+(progn
+  ;; set font for emoji (if before emacs 28, should come after setting symbols. emacs 28 now has 'emoji . before, emoji is part of 'symbol)
+  (set-fontset-font
+   t
+   (if (version< emacs-version "28.1")
+     '(#x1f300 . #x1fad0)
+     'emoji
+     )
+   (cond
+    ((member "Apple Color Emoji" (font-family-list)) "Apple Color Emoji")
+    ((member "Noto Color Emoji" (font-family-list)) "Noto Color Emoji")
+    ((member "Noto Emoji" (font-family-list)) "Noto Emoji")
+    ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")
+    ((member "Symbola" (font-family-list)) "Symbola"))))
 
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 (add-to-list 'load-path "~/.emacs.d/themes/")
@@ -50,6 +80,35 @@
 ;;     (ediff file1 file2)))
 
 ;; (add-to-list 'command-switch-alist '("diff" . command-line-diff))
+
+(defun toggle (opt)
+  "Toggle option's value.  This makes sense for binary (toggle) options.
+By default, completion candidates are limited to user options that
+have `boolean' custom types.  However, there are many \"binary\" options
+that allow other non-nil values than t.
+
+You can use a prefix argument to change the set of completion
+candidates, as follows:
+
+ - With a non-negative prefix arg, all user options are candidates.
+ - With a negative prefix arg, all variables are candidates."
+  (interactive
+   (list (completing-read
+	  "Toggle value of option: " obarray
+	  (cond ((and current-prefix-arg
+		      (wholenump (prefix-numeric-value current-prefix-arg)))
+		 'user-variable-p)
+		(current-prefix-arg 'boundp)
+		(t (lambda (sym) (eq (get sym 'custom-type) 'boolean))))
+	  t nil 'variable-name-history)))
+  (let ((sym (intern opt)))
+    (set sym (not (eval sym))) (message "`%s' is now %s" opt (eval sym))))
+
+(defun org-toggle-wysiwyg ()
+  (interactive)
+  (toggle "org-hide-emphasis-markers")
+  ; (org-bullets-mode org-hide-emphasis-markers)
+)
 
 (defun indent-buffer ()
   "Automatically indent the whole buffer"
@@ -97,6 +156,14 @@
     (mapcar 'symbol-name zone-programs))))
   (let ((zone-programs (list (intern pgm))))
     (zone)))
+
+(defun theme-mark-alt-buffer ()
+  "Visually mark the current buffer with an alternative scheme"
+  (interactive)
+  (face-remap-add-relative 'default
+                           :background "black"
+                           ;;:foreground "lightblue"))
+                           ))
 
 ;;=====================================================================
 ;;# Keys
@@ -176,39 +243,6 @@
 ;;C-S-/ to toggle comment
 (global-set-key (kbd "C-?") 'comment-or-uncomment-region)
 
-(defun format-range (start end)
-  "For copy-bitbucket-link-to-line; format a numerical range concisely."
-  (if (= start end)
-      (format "%d" start)
-      (format "%d-%d" start end)))
-
-(defun copy-bitbucket-link-to-line (start end)
-  "Make a bitbucket link from the region, using current git info."
-  (interactive "r") ; operate on region
-  (let* ((startl (line-number-at-pos start)) (endl (line-number-at-pos end))
-    ;remove trailing newlines from shell output
-    (remote (substring
-      (shell-command-to-string "git remote get-url `git rev-parse --abbrev-ref @{upstream} | sed -E 's/\\/.+//g'`")
-      0 -1))
-    (ref (substring
-      (shell-command-to-string "git symbolic-ref --short HEAD")
-      0 -1))
-    (gitfile (file-relative-name
-              (buffer-file-name)
-              (vc-git-root (buffer-file-name))))
-    (browse (replace-regexp-in-string
-             "ssh://git@\\(.+?\\):.+/\\([~A-Za-z]+\\)/\\(.+?\\).git"
-             "https://\\1/projects/\\2/repos/\\3/browse/" remote nil nil ))
-    (link (format "%s%s?at=%s#%s"
-                  browse gitfile ref
-                  (format-range startl endl))))
-    (deactivate-mark) ; make sure we copy the new thing instead
-    (message link)
-    (x-select-text link)))
-
-;;Copy bitbucket link to region, for sharing
-; (global-set-key (kbd "C-c b") 'copy-bitbucket-link-to-line)
-
 (defun apply-to-region (func)
   (undo-boundary)
   (let* ((substr (buffer-substring (mark) (point)))
@@ -216,17 +250,31 @@
     (delete-region (region-beginning) (region-end))
     (insert res)))
 
-(defun py-eval-and-replace (start end)
-  "Replace the region with the result of evalulating it in python3."
-  (interactive "r") ; unused
-  (apply-to-region (lambda (r)
-    (let* ((tmpfile (make-temp-file "py-eval-inline" nil ".py"))
-           (__ (write-region (format "import sys\nimport math\nsys.stdout.write(str(eval('''%s''')))" r) nil tmpfile))
-           (res (shell-command-to-string (format "python3 %s" tmpfile))))
+(defun replace-or-display (arg expr result)
+  "Replace the region with `result, or just display that `expr = `result if arg is not null."
+  (if (null arg)
+      (apply-to-region (lambda (r) result))
+    (message "%s = %s" expr result)
+))
+
+(defun calc-eval-region (arg start end)
+  "Replace the region with the result of evalulating it in `calc, or just display it with a prefix argument."
+  (interactive "P\nr")
+  (let ((expr (buffer-substring-no-properties start end)))
+    (replace-or-display arg expr (calc-eval expr)))
+)
+
+(defun py-eval-region (arg start end)
+  "Replace the region with the result of evalulating it in `python3, or just display it with a prefix argument."
+  (interactive "P\nr") ; unused
+  (let* ((tmpfile (make-temp-file "py-eval-inline" nil ".py"))
+         (expr (buffer-substring-no-properties start end))
+         (__ (write-region (format "import sys\nimport math\nsys.stdout.write(str(eval('''%s''')))" expr) nil tmpfile))
+         (res (shell-command-to-string (format "python3 %s" tmpfile))))
       (delete-file tmpfile)
-      res))
-  ))
-(global-set-key (kbd "C-S-e") 'py-eval-and-replace)
+      (replace-or-display arg expr res))
+  )
+(global-set-key (kbd "C-S-e") 'py-eval-region)
 
 ;;=====================================================================
 ;;#Hooks
@@ -456,7 +504,7 @@
 ;;===================================================
 ;;# Bootstrap: Now load another file
 
-(let ((exfile "~/.emacs.d/init-extra.el"))
+(dolist (exfile '("~/.emacs.d/init-extra.el" "~/.emacs.d/init-local.el"))
   (if (file-exists-p exfile) (load-file exfile)))
 
 ;;=====================================================================

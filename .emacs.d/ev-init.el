@@ -26,6 +26,9 @@
 
 (message "where the sun it never shines")
 
+; (add-to-list 'load-path "~/.emacs.d/evil/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/evil-1.14.2/")
+
 (use-package evil
   :init
   (setq evil-want-integration t)
@@ -58,10 +61,14 @@
 ))
 
 (dolist
-  (mode '("dired" "buff-menu" "compile" "markdown-mode" "smerge" "info" "which-key" "tar-mode"))
-  (condition-case nil
-      (evil-collection-loadmode mode)
-  (wrong-type-argument (message (format "Failed evil loading %s" mode)))))
+  (mode '("org" "dired" "buff-menu" "compile" "markdown-mode" "smerge" "info" "which-key" "tar-mode"))
+  ;; (let ((setupfn (concat "evil-collection-" mode "-setup"))
+  ;;       (elfile (car (file-expand-wildcards (concat "~/.emacs.d/evil-collection-*/modes/" mode "/evil-collection-" mode ".el")))))
+  ;;   ; (message "will autoload %s %s with %s" mode setupfn elfile)
+  ;;   (autoload (intern setupfn) elfile)
+  ;;   (eval-after-load (intern mode) (funcall (intern setupfn)))
+  ;;   )
+    (evil-collection-loadmode mode))
 
 ;; (let* ((mode "ztree")
 ;;        (setupfn "evil-collection-ztree-setup")
@@ -105,6 +112,14 @@
   (evil-start-undo-step))
 
 (add-hook 'after-save-hook 'force-undo-boundary)
+
+(evil-ex-define-cmd "q" 'kill-current-buffer)
+(evil-ex-define-cmd "wq" 'save-and-kill-this-buffer)
+(defun save-and-kill-this-buffer()
+  (interactive)
+  (save-buffer)
+  (kill-current-buffer)
+)
 
 (dolist
   (mode '(;buffer-menu-mode

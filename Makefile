@@ -26,12 +26,10 @@ define copy_cmd
 	cp $< $@
 endef
 
-home/.fonts.conf :: $(dotfiles)/home/.fonts.conf
-	$(call copy_cmd)
 home/.vimrc :: $(dotfiles)/home/.vimrc
 	$(call copy_cmd)
 
-.emacs.d/%.el : ICOM = \\\;
+.emacs.d/%.el: ICOM = \\\;
 .emacs.d/%.el :: $(dotfiles)/.emacs.d/%.el
 	$(call compile_cmd,ICOM)
 
@@ -42,12 +40,15 @@ home/.vimrc :: $(dotfiles)/home/.vimrc
 .emacs.d/%.patch :: $(dotfiles)/.emacs.d/%.patch
 	$(call copy_cmd)
 
-home/.% : ICOM = \#
+home/.%: ICOM = \#
 home/.% :: $(dotfiles)/home/.%
 	$(call compile_cmd,ICOM)
 
-local/.%: ICOM = \#
-local/.% :: $(dotfiles)/local/.%
+home/%.conf :: $(dotfiles)/home/%.conf
+	$(call copy_cmd)
+
+local/%: ICOM = \#
+local/% :: $(dotfiles)/local/%
 	$(call compile_cmd,ICOM)
 
 .githooks/%: $(dotfiles)/.githooks/%
@@ -65,6 +66,9 @@ scripts/% :: $(dotfiles)/scripts/%
 
 .chef/knife.rb :: ~/.chef/knife.rb
 	$(call copy_cmd)
+
+tell_me_what_all_cool_stuff_isnt_in_the_makefile_yet:
+	bash -c 'diff <(find scripts local home | sort -u) <(cd ../dotfiles/; find scripts local home | sort -u)'
 
 .PHONY: clean
 clean:

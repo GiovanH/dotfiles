@@ -5,7 +5,6 @@ alias tsv="column -t -s $'\t'" # Pretty-print tsv data
 alias csv="column -t -s ," # Pretty-print csv data
 alias rrsync="rsync -hir --executability --times" # rsync with defaults
 # recursively grep a terragrunt directory, excluding junk
-alias tgrep="grep -r --exclude-dir .terragrunt-cache --exclude \"*.log\""
 
 alias killall="killall -u $USER" # multiuser-safe killall
 
@@ -18,13 +17,22 @@ alias psedi="perl -pi -e"
 # used for password generation, various
 export WORDLIST="/usr/share/dict/words"
 
+splitpath() {
+  filepath="$1" # "./relative folder/file name.j2.ext"
+  eg filepath = "${dirname}/${filestem}.${extension}"
+  eg filepath = "${dirname}/${filename}"
+  export dirname=$(dirname "$filepath") # "./relative folder"
+  export filename=$(basename -- "$filepath") # "file name.j2.ext"
+  export extension="${filename##*.}" # "ext"
+  export filestem="${filename%.*}" # "file name.j2"
+}
+
 # Colorize stderr
 colorerr() {
   set -o pipefail
   "$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2)
 }
 
-# alias find="/bin/find"
 [[ -d "$(which bfs 2>/dev/null)" ]] && alias find="bfs"
 
 # Fast find file by partial name
@@ -75,12 +83,6 @@ gm_rm_our_additions()    { git add $(git status -s | grep -Po '^AU \K(.+)$'); }
 gm_add_their_additions() { git add $(git status -s | grep -Po '^.A \K(.+)$'); }
 gm_wassup() { tail $(git status -s | grep -Po '^(.D|AU|A.) \K(.+)$'); }
 
-gm_smerge_all() {
-  for f in $(git status -s | grep -Po '^(AA|UU) \K(.+)$'); do
-    smerge $f
-  done
-}
-
 git_clone_or_update() {
   eg Clone a repo, or pull-update it if it already exists.
   repo=$1
@@ -112,7 +114,6 @@ ddimage () {( set -e
     dd if=$device bs=64K status=progress | gzip -c > "$outfile"
 )}
 
-
 pdiff() {
   # Diff pcloud "conflicted" files
   # TODO use splitext
@@ -141,32 +142,33 @@ function discordmp4 {
 }
 
 delete_empty_dirs() {
-    find . -not -path '*/.*' -type d -empty -exec echo "rmdir '{}'" \; -delete;
+  find . -not -path '*/.*' -type d -empty -exec echo "rmdir '{}'" \; -delete;
 }
 export -f delete_empty_dirs
 
-function git_log_search {
-    git log -S'$@' -p | grep -i '$@'
+git_log_search() {
+  git log -S'$@' -p | grep -i '$@'
 }
 
 
+
 react() {
-    if [ -z "$1" -o -z "$2" ]; then
-        echo "Usage: react <[./]file-to-watch> <[./]action> <to> <take>"
-    elif ! [ -r "$1" ]; then
-        echo "Can't react to $1, permission denied"
-    else
-        TARGET="$1"; shift
-        ACTION="$@"
-        while sleep 1; do
-            ATIME=$(stat -c %Z "$TARGET")
-            if [[ "$ATIME" != "${LTIME:-}" ]]; then
-                LTIME=$ATIME
-                echo -n "$(date -Iminutes) "
-                $ACTION
-            fi
-        done
-    fi
+  if [ -z "$1" -o -z "$2" ]; then
+    echo "Usage: react <[./]file-to-watch> <[./]action> <to> <take>"
+  elif ! [ -r "$1" ]; then
+    echo "Can't react to $1, permission denied"
+  else
+    TARGET="$1"; shift
+    ACTION="$@"
+    while sleep 1; do
+      ATIME=$(stat -c %Z "$TARGET")
+      if [[ "$ATIME" != "${LTIME:-}" ]]; then
+        LTIME=$ATIME
+        echo -n "$(date -Iminutes) "
+        $ACTION
+      fi
+    done
+  fi
 }
 export -f react
 
@@ -254,27 +256,33 @@ copytardir() {
 
 # Use emacs smerge/ediff mode to resolve a git conflicted file.
 smerge() {( set -ev
-    if [ -z "$1" ]; then
-        echo "Usage: smerge <conflicted_file>"
-        echo "Automatically quits emacs and 'git add's the file when ediff is done."
-        return
-    fi
-    emacs $1 --eval "(progn
-      (add-hook 'ediff-after-quit-hook-internal 'save-buffers-kill-emacs)
-      (smerge-mode)
-      (smerge-ediff)
-    )"
-    git add $1
+  if [ -z "$1" ]; then
+    echo "Usage: smerge <conflicted_file>"
+    echo "Automatically quits emacs and 'git add's the file when ediff is done."
+    return
+  fi
+  emacs $1 --eval "(progn
+    (add-hook 'ediff-after-quit-hook-internal 'save-buffers-kill-emacs)
+    (smerge-mode)
+    (smerge-ediff)
+  )"
+  git add $1
 )}
 
-ediff() {
-    if [ -z "$1" -o -z "$2" ]; then echo "Usage: ediff <file_A> <file_B>"; return; fi
-    emacs=emacs
+gm_smerge_all() {
+  for f in $(git status -s | grep -Po '^(AA|UU) \K(.+)$'); do
+    smerge $f
+  done
+}
 
-    $emacs -nw --eval "(progn
-        (add-hook 'ediff-after-quit-hook-internal 'save-buffers-kill-emacs)
-        (ediff-files \"$1\" \"$2\")
-    )";
+ediff() {
+  if [ -z "$1" -o -z "$2" ]; then echo "Usage: ediff <file_A> <file_B>"; return; fi
+  emacs=emacs
+
+  $emacs -nw --eval "(progn
+      (add-hook 'ediff-after-quit-hook-internal 'save-buffers-kill-emacs)
+      (ediff-files \"$1\" \"$2\")
+  )";
 }
 
 # Log screen session directly to html ansi
@@ -283,17 +291,6 @@ ansilog() {
     cat screenlog.0 | ansi2html.sh > screenlog.html
     ls -al screenlog.html
 }
-
-# Node version manager lazy-loader
-if [[ -d "$HOME/.nvm" ]]; then
-    nvm() {
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-        echo "nvm initialized"
-        nvm $@
-    }
-fi
 
 # Emacs aliases
 alias ev="emacs -l ~/.emacs.d/ev-init.el"

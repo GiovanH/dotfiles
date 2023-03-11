@@ -42,7 +42,6 @@ function colordemo {
   vline=$(tput smacs 2>/dev/null; printf 'x'; tput rmacs 2>/dev/null)
   [ "$vline" = "x" ] && vline="|"
 
-  #printf "${e}4m%80s${e}0m\n"
   printf "${e}1;4mf\\\\b${e}0m${e}4m none  white    black     red     \
 green    yellow   blue    magenta    cyan  ${e}0m\\n"
 

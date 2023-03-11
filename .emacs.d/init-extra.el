@@ -14,6 +14,53 @@
 ))
 
 
+;;=====================================================================
+;;# Software
+
+;; Magit
+(add-to-list 'load-path "~/.emacs.d/site-lisp/dash.el-2.19.1/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/git-modes-1.4.0/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/magit-3.3.0/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/magit-section-3.3.0/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/transient-0.3.7/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/with-editor-3.0.4/")
+(use-package magit
+  :commands (magit magit-list-repositories)
+  :config (setq magit-diff-refine-hunk nil)
+          (setq magit-repository-directories `((,(expand-file-name "~/gits/") . 1)))
+  )
+
+;;=====================================================================
+;;# Language support
+
+(autoload 'markdown-mode "markdown-mode" "markdown-mode; local major mode" t)
+(add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
+
+(setq markdown-asymmetric-header t) ; don't use symmetric markdown header
+
+(setq-local imenu-generic-expression-markdown
+   '(;; ("title" "^\\(.*\\)[\n]=+$" 1)
+     ;; ("h2-"   "^\\(.*\\)[\n]-+$" 1)
+     ;; ("h1"    "^# \\(.*\\)$" 1)
+     ("h2"    "^## \\(.*\\)$" 1)
+     ("h3"    "^### \\(.*\\)$" 1)
+     ("h4"    "^#### \\(.*\\)$" 1)
+     ("h5"    "^##### \\(.*\\)$" 1)
+     ("h6"    "^###### \\(.*\\)$" 1)
+     ("fn"    "^\\[\\^\\(.*\\)\\]" 1)
+))
+(add-hook 'markdown-mode-hook (lambda ()
+  (setq-local imenu-generic-expression imenu-generic-expression-markdown)))
+
+(autoload 'hcl-mode "hcl-mode" "hcl-mode; local major mode for hcl files" t)
+(add-to-list 'auto-mode-alist '("\\.hcl\\'" . hcl-mode))
+
+
+;;=====================================================================
+;;# Tweaks and features
+
+;; (error "Done")
 (message "never go becret")
 
 ;;=====================================================================
@@ -92,9 +139,6 @@
 ;;=====================================================================
 ;;# Software
 
-;; Magit
-(use-package magit
-  :commands (magit))
 
 ;;# Flycheck
 (use-package flycheck
@@ -114,6 +158,11 @@
       ("Level" 8 flycheck-error-list-entry-level-<)
       ("ID" 6 t)
       (,(flycheck-error-list-make-last-column "Message" 'Checker) 0 t)]))
+
+(use-package flymake-shellcheck
+  :commands flymake-shellcheck-load
+  :init
+  (add-hook 'sh-mode-hook 'flymake-shellcheck-load))
 
 (use-package projectile
   :commands (projectile-mode)
@@ -144,6 +193,8 @@
 ;;  (setq py-autopep8-options '("--aggressive" "--ignore=E302,E305,E226,E128,W50,E722" "--max-line-length=120"))
 ;;  ; (add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
 ;;))
+
+(use-package x509-mode)
 
 (use-package tramp-term
   :commands tramp-term)
@@ -290,33 +341,10 @@
 
 (message "Loading modes")
 
-(autoload 'markdown-mode "markdown-mode" "markdown-mode; local major mode" t)
-(add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
-(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
-
-(setq markdown-asymmetric-header t) ; don't use symmetric markdown header
-
-(setq-local imenu-generic-expression-markdown
-   '(;; ("title" "^\\(.*\\)[\n]=+$" 1)
-     ;; ("h2-"   "^\\(.*\\)[\n]-+$" 1)
-     ;; ("h1"    "^# \\(.*\\)$" 1)
-     ("h2"    "^## \\(.*\\)$" 1)
-     ("h3"    "^### \\(.*\\)$" 1)
-     ("h4"    "^#### \\(.*\\)$" 1)
-     ("h5"    "^##### \\(.*\\)$" 1)
-     ("h6"    "^###### \\(.*\\)$" 1)
-     ("fn"    "^\\[\\^\\(.*\\)\\]" 1)
-))
-(add-hook 'markdown-mode-hook (lambda ()
-  (setq-local imenu-generic-expression imenu-generic-expression-markdown)))
-
 ;;(require 'dockerfile-mode)
 ;;(add-to-list 'auto-mode-alist '("Dockerfile" . dockerfile-mode))
 (use-package dockerfile-mode
   :mode (("Dockerfile'" . dockerfile-mode)))
-
-(use-package pico8-mode
-  :mode (("\\.p8" . pico8-mode)))
 
 (use-package mustache-mode
   :mode (("\\.tcl'" . mustache-mode)))
