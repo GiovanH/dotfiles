@@ -39,7 +39,10 @@
 
 (ignore-errors
   (set-face-attribute 'default nil
-    :font (font-candidate "Consolas-12:weight=normal" "DejaVu Sans Mono-12:weight=normal")
+    :font (font-candidate
+           "Consolas-12:weight=normal"
+           "DejaVu Sans Mono-12:weight=normal"
+           "Courier New-12:weight-normal")
     :height 110)
   ;; (when (member "Noto Emoji" (font-family-list))
   ;;   (set-fontset-font
@@ -401,6 +404,8 @@ candidates, as follows:
 
 (setq sh-basic-offset 2)
 (setq ess-fancy-comments nil)
+
+(setq python-shell-interpreter "python3")
 
 (add-hook 'term-mode-hook
   (lambda ()

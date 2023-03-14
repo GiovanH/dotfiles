@@ -47,21 +47,22 @@
 
 (message "evil grows in cracks and holes")
 
-(add-to-list 'load-path (car (file-expand-wildcards "~/.emacs.d/evil-collection-*")))
+(add-to-list 'load-path (car (file-expand-wildcards "~/.emacs.d/elpa/evil-collection-*")))
 (require 'evil-collection)
 
 ;; Manually enable evil-collection extensions for modes in this list
 
 (defun evil-collection-loadmode (mode &optional altmode)
   (let ((setupfn (concat "evil-collection-" mode "-setup"))
-        (elfile (car (file-expand-wildcards (concat "~/.emacs.d/evil-collection-*/modes/" mode "/evil-collection-" mode ".el")))))
-    ;; (message "will autoload %s %s with %s" mode setupfn elfile)
-    (autoload (intern setupfn) elfile)
-    (eval-after-load (intern (or altmode mode)) (funcall (intern setupfn)))
+        (elfile (car (file-expand-wildcards (concat "~/.emacs.d/elpa/evil-collection-*/modes/" mode "/evil-collection-" mode ".el")))))
+    (if (not elfile)
+        (message "no file to load %s with %s" mode setupfn)
+      (autoload (intern setupfn) elfile)
+      (eval-after-load (intern (or altmode mode)) (funcall (intern setupfn))))
 ))
 
 (dolist
-  (mode '("org" "dired" "buff-menu" "compile" "markdown-mode" "smerge" "info" "which-key" "tar-mode"))
+  (mode '("dired" "buff-menu" "compile" "markdown-mode" "smerge" "info" "which-key" "tar-mode"))
   ;; (let ((setupfn (concat "evil-collection-" mode "-setup"))
   ;;       (elfile (car (file-expand-wildcards (concat "~/.emacs.d/evil-collection-*/modes/" mode "/evil-collection-" mode ".el")))))
   ;;   ; (message "will autoload %s %s with %s" mode setupfn elfile)

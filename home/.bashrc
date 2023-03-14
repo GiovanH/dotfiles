@@ -61,6 +61,11 @@ sourceif () { [[ -f "$1" ]] && . "$1"; } # || echo "missing file $1"; }
 sourceif ${HOME}/.bash_colors
 sourceif ${HOME}/.bash_personal
 
+export HOSTNAME_NICE="$(hostname -f 2>/dev/null || hostname 2>/dev/null || cat /etc/hostname)"
+[[ -f ~/.profile_$(uname -o) ]] && . ~/.profile_$(uname -o)
+[[ -f ~/.profile_${HOSTNAME_NICE} ]] && . ~/.profile_${HOSTNAME_NICE}
+[[ -f ~/.profile_local ]] && . ~/.profile_local
+
 # Programmable completion enhancements
 sourceif /etc/bash_completion
 sourceif ${HOME}/.bash_completion
@@ -96,4 +101,11 @@ shopt -s cdspell
 
 # stop killing evw
 shopt -s checkjobs
+
+export HOSTNAME_NICE="$(hostname -f 2>/dev/null || hostname 2>/dev/null || cat /etc/hostname)"
+HOST_FAMILY="UNK"
+
+sourceif "${HOME}/.profile_$(uname -o)"
+sourceif "${HOME}/.profile_${HOSTNAME_NICE}"
+sourceif "${HOME}/.profile_local"
 

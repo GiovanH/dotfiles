@@ -160,12 +160,13 @@ react() {
   else
     TARGET="$1"; shift
     ACTION="$@"
+    LTIME=NEVER
     while sleep 1; do
       ATIME=$(stat -c %Z "$TARGET")
-      if [[ "$ATIME" != "${LTIME:-}" ]]; then
+      if [[ "$ATIME" != "${LTIME}" ]]; then
         LTIME=$ATIME
         echo -n "$(date -Iminutes) "
-        $ACTION
+        bash -c "$ACTION"
       fi
     done
   fi

@@ -3,64 +3,6 @@
 
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
-(if (fboundp 'advice-add) (progn
-  (defun my-advice-silence-messages (func &rest args)
-  "Invoke FUNC with ARGS, silencing all messages. This is an `:around' advice for many different functions."
-  (cl-letf (((symbol-function #'msg) #'ignore)
-            ((symbol-function #'message) #'ignore))
-      (apply func args)))
-  (dolist (func '(define-minor-mode do-after-load-evaluation))
-  (advice-add func :around #'my-advice-silence-messages))
-))
-
-
-;;=====================================================================
-;;# Software
-
-;; Magit
-(add-to-list 'load-path "~/.emacs.d/site-lisp/dash.el-2.19.1/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/git-modes-1.4.0/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/magit-3.3.0/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/magit-section-3.3.0/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/transient-0.3.7/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/with-editor-3.0.4/")
-(use-package magit
-  :commands (magit magit-list-repositories)
-  :config (setq magit-diff-refine-hunk nil)
-          (setq magit-repository-directories `((,(expand-file-name "~/gits/") . 1)))
-  )
-
-;;=====================================================================
-;;# Language support
-
-(autoload 'markdown-mode "markdown-mode" "markdown-mode; local major mode" t)
-(add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
-(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
-
-(setq markdown-asymmetric-header t) ; don't use symmetric markdown header
-
-(setq-local imenu-generic-expression-markdown
-   '(;; ("title" "^\\(.*\\)[\n]=+$" 1)
-     ;; ("h2-"   "^\\(.*\\)[\n]-+$" 1)
-     ;; ("h1"    "^# \\(.*\\)$" 1)
-     ("h2"    "^## \\(.*\\)$" 1)
-     ("h3"    "^### \\(.*\\)$" 1)
-     ("h4"    "^#### \\(.*\\)$" 1)
-     ("h5"    "^##### \\(.*\\)$" 1)
-     ("h6"    "^###### \\(.*\\)$" 1)
-     ("fn"    "^\\[\\^\\(.*\\)\\]" 1)
-))
-(add-hook 'markdown-mode-hook (lambda ()
-  (setq-local imenu-generic-expression imenu-generic-expression-markdown)))
-
-(autoload 'hcl-mode "hcl-mode" "hcl-mode; local major mode for hcl files" t)
-(add-to-list 'auto-mode-alist '("\\.hcl\\'" . hcl-mode))
-
-
-;;=====================================================================
-;;# Tweaks and features
-
-;; (error "Done")
 (message "never go becret")
 
 ;;=====================================================================
@@ -108,37 +50,57 @@
 
 ;;=====================================================================
 ;;# Package management
+(defun my-package-update ()
+  (interactive)
+    (setq debug-on-error t)
+    (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/") t)
+    (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+    (setq package-check-signature nil)
+    (setq package-selected-packages '(
+      annalist ansi
+      bind-key
+      cl-generic company
+      counsel
+      dash
+      elisp-refs epl evil evil-collection
+      f fiplr flycheck
+      git-modes goto-chg grizzl
+      hyperbole
+      ivy
+      lv
+      magit
+      popup
+      s seq swiper
+      undo-fu use-package
+      with-editor
+      pydoc
+    ))
+    (package-refresh-contents)
+  (package-install-selected-packages))
+
+
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 (require 'package)
 (when (not (fboundp 'use-package))
-  (setq debug-on-error t)
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-  (setq package-check-signature nil)
-  (setq package-selected-packages '(
-    annalist ansi
-    bind-key
-    cl-generic company
-    dash
-    elisp-refs epl evil ;; evil-collection
-    f fiplr flycheck
-    git-modes goto-chg grizzl
-    ivy
-    lv
-    magit
-    popup
-    s seq swiper
-    undo-fu use-package
-    with-editor
-  ))
-  (package-refresh-contents)
-  (package-install-selected-packages)
-)
+  (my-package-update))
 (package-initialize) ; Load lisp packages and activate them
 (require 'pkg-info)
 
 ;;=====================================================================
 ;;# Software
 
+;; Magit
+(add-to-list 'load-path "~/.emacs.d/site-lisp/dash.el-2.19.1/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/git-modes-1.4.0/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/magit-3.3.0/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/magit-section-3.3.0/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/transient-0.3.7/")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/with-editor-3.0.4/")
+(use-package magit
+  :commands (magit magit-list-repositories)
+  :config (setq magit-diff-refine-hunk nil)
+          (setq magit-repository-directories `((,(expand-file-name "~/gits/") . 1)))
+  )
 
 ;;# Flycheck
 (use-package flycheck
@@ -224,6 +186,9 @@
   :bind (("M-o" . 'ace-window))
   :config
   (setq aw-keys '(?j ?k ?l ?a ?s ?d ?f ?g ?h)))
+
+(use-package hyperbole
+  :bind (("M-<return>" . hyperbole-mode)))
 
 ;; Hideshow
 ;; (defun +data-hideshow-forward-sexp (arg)
@@ -340,6 +305,29 @@
 ;;# Language support
 
 (message "Loading modes")
+
+(autoload 'markdown-mode "markdown-mode" "markdown-mode; local major mode" t)
+(add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
+
+(setq markdown-asymmetric-header t) ; don't use symmetric markdown header
+
+(setq-local imenu-generic-expression-markdown
+   '(;; ("title" "^\\(.*\\)[\n]=+$" 1)
+     ;; ("h2-"   "^\\(.*\\)[\n]-+$" 1)
+     ;; ("h1"    "^# \\(.*\\)$" 1)
+     ("h2"    "^## \\(.*\\)$" 1)
+     ("h3"    "^### \\(.*\\)$" 1)
+     ("h4"    "^#### \\(.*\\)$" 1)
+     ("h5"    "^##### \\(.*\\)$" 1)
+     ("h6"    "^###### \\(.*\\)$" 1)
+     ("fn"    "^\\[\\^\\(.*\\)\\]" 1)
+))
+(add-hook 'markdown-mode-hook (lambda ()
+  (setq-local imenu-generic-expression imenu-generic-expression-markdown)))
+
+(autoload 'hcl-mode "hcl-mode" "hcl-mode; local major mode for hcl files" t)
+(add-to-list 'auto-mode-alist '("\\.hcl\\'" . hcl-mode))
 
 ;;(require 'dockerfile-mode)
 ;;(add-to-list 'auto-mode-alist '("Dockerfile" . dockerfile-mode))
