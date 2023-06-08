@@ -5,6 +5,7 @@ footer = END PUBLIC FILE
 privtag = PRIV
 allfiles = \
 	$(addprefix home/,.bash_personal .bash_colors .bash_completion .bash_profile .bashrc .gitconfig .gitignore .vimrc .fonts.conf .profile_CYGWIN_NT) \
+	$(addprefix reg/,bog.runasinvoker.reg gio.makebak.reg gio.toggledisabled.reg) \
 	$(addprefix scripts/,jqt shlex j2) \
 	$(addprefix .emacs.d/,init.el init-extra.el ev-init.el) \
 	.githooks/prepare-commit-msg
@@ -27,6 +28,9 @@ define copy_cmd
 endef
 
 home/.vimrc :: $(dotfiles)/home/.vimrc
+	$(call copy_cmd)
+
+reg/%.reg :: $(dotfiles)/reg/%.reg
 	$(call copy_cmd)
 
 .emacs.d/%.el: ICOM = \\\;
