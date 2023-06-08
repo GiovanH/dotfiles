@@ -12,7 +12,7 @@ EXTENSIONS = ["jinja2.ext.loopcontrols", "jinja2.ext.debug"]
 NO_CLOBBER = False
 PICO8_MODE = False
 
-def render_template(template_path, input_data, out_path):
+def render_template(template_path, input_data):
     exopts = {}
     if PICO8_MODE:
         exopts = {
@@ -20,7 +20,6 @@ def render_template(template_path, input_data, out_path):
             "variable_end_string": '}}"',
             "line_statement_prefix": "--%"
         }
-    print("Rendering template '{}' to '{}'".format(template_path, out_path))
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(os.path.dirname(template_path)),
         extensions=EXTENSIONS,
@@ -33,18 +32,17 @@ def render_template(template_path, input_data, out_path):
     env.globals["environ"] = lambda key: str(os.environ.get(key))
     env.globals["get_context"] = lambda: input_data
 
+
     return env.get_template(os.path.basename(template_path)).render(input_data)
 
-
-def auto_render_template(file_path, input_data):
-    out_path, dotj2 = os.path.splitext(file_path)
+def auto_render_template(template_path, input_data):
+    out_path, dotj2 = os.path.splitext(template_path)
     if dotj2 != ".j2":
-        raise ValueError("File '{}' is not a jinja2 template ending with .j2".format(file_path))
+        raise ValueError("File '{}' is not a jinja2 template ending with .j2".format(template_path))
     if os.path.isfile(out_path) and NO_CLOBBER:
         raise IOError("File exists: '{}' and no-clobber is {}.".format(out_path, NO_CLOBBER))
-    with open(out_path, 'wb') as fp:
-        fp.write(render_template(file_path, input_data, out_path).encode('utf-8'))
-
+    with open(out_path, 'w') as fp:
+        fp.write(render_template(template_path, input_data))
 
 def parse_args():
     import argparse
@@ -53,10 +51,14 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument('input_files', help="Input files in the form of *.ext.j2", nargs='+')
-    parser.add_argument('--data', help="JSON data to use as additional input. Can optionally be a path to a file.", default={})
-    parser.add_argument('--extensions', help="jinja2 extensions to load", default=EXTENSIONS)
+    parser.add_argument(
+        '--data',
+        help="JSON data to use as additional input. Can optionally be a path to a file.",
+        default={})
+    parser.add_argument('--extensions', help="jinja2 extensions to load", default=[])
     parser.add_argument('--no-clobber', action='store_true', help="If set, don't overwrite files.", default=False)
     parser.add_argument('--pico8', action='store_true', help="Use alternate quote-based syntax", default=False)
+    parser.add_argument('--print', action='store_true', help="Print the output to stdout instead of writing to file.", default=False)
     return parser.parse_args()
 
 def main():

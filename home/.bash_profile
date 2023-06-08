@@ -8,7 +8,8 @@ fi
 
 # sgio's super cool PS1 prompt
 
-PSCOLOR_HOST=${PSCOLOR_HOST:-$PSCOLOR_PURPLE}
+export HOSTNAME_NICE="$(hostname -f 2>/dev/null || hostname 2>/dev/null || cat /etc/hostname)"
+export PSCOLOR_HOST=${PSCOLOR_HOST:-$PSCOLOR_PURPLE}
 
 EXIT='?'
 TITLE_ANSI=''
@@ -28,7 +29,8 @@ if [ "$TERM" == "xterm-256color" ]; then
       ;;
     *)
       local this_command=$(HISTTIMEFORMAT= history 1 | sed -e "s/^[ ]*[0-9]*[ ]*//");
-      printf "\033]0;%q ${HOSTNAME_NICE}:${PWD/$HOME/~}\007" "${this_command}" > /dev/stderr
+      # printf "\033]0;%q ${HOSTNAME_NICE}:${PWD/$HOME/~}\007" "${this_command}" > /dev/stderr
+      printf "\033]0;${this_command} ${HOSTNAME_NICE}:${PWD/$HOME/~}\007" > /dev/stderr
       ;;
     esac
   }

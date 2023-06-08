@@ -15,4 +15,6 @@ print("(" + json.dumps(args) + " | (.)), (.[] | [" + p2 + "]) | @tsv")
 EOF
 )" "$@")
 
-jq -r "$QUERY" | column -t -s $'\t'
+# echo $QUERY
+
+jq -r "$QUERY"#  | column -t -s $'\t'

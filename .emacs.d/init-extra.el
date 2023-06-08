@@ -52,50 +52,53 @@
 ;;# Package management
 (defun my-package-update ()
   (interactive)
-    (setq debug-on-error t)
-    (add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/") t)
-    (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-    (setq package-check-signature nil)
-    (setq package-selected-packages '(
-      annalist ansi
-      bind-key
-      cl-generic company
-      counsel
-      dash
-      elisp-refs epl evil evil-collection
-      f fiplr flycheck
-      git-modes goto-chg grizzl
-      hyperbole
-      ivy
-      lv
-      magit
-      popup
-      s seq swiper
-      undo-fu use-package
-      with-editor
-      pydoc
-    ))
-    (package-refresh-contents)
-  (package-install-selected-packages))
+  (let (;; Workarounds, enable as needed
+        ;;(debug-on-error t)
+        ;;(gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
+        ;;(package-check-signature nil)
+       )
+      ;(add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/") t)
+      (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+      (add-to-list 'package-archives '("jcs-elpa" . "https://jcs-emacs.github.io/jcs-elpa/packages/") t)
+      (setq package-selected-packages '(
+        annalist ansi
+        bind-key
+        cl-generic company
+        counsel
+        dash
+        elisp-refs epl evil evil-collection
+        f fiplr flycheck
+        git-modes goto-chg grizzl
+        hyperbole
+        ivy
+        lv
+        lsp-mode lsp-ui lsp-ivy ;; lsp-treemacs
+        ;; dap-mode
+        magit
+        markdown-mode
+        popup
+        s seq swiper
+        treemacs treemacs-evil treemacs-magit
+        undo-fu use-package
+        with-editor
+        pydoc
+        x509-mode
+      ))
+      (package-refresh-contents)
+      (package-install-selected-packages)))
 
 
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 (require 'package)
-(when (not (fboundp 'use-package))
-  (my-package-update))
 (package-initialize) ; Load lisp packages and activate them
+(unless (package-installed-p 'use-package)
+  (my-package-update))
 (require 'pkg-info)
 
 ;;=====================================================================
 ;;# Software
 
 ;; Magit
-(add-to-list 'load-path "~/.emacs.d/site-lisp/dash.el-2.19.1/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/git-modes-1.4.0/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/magit-3.3.0/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/magit-section-3.3.0/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/transient-0.3.7/")
-(add-to-list 'load-path "~/.emacs.d/site-lisp/with-editor-3.0.4/")
 (use-package magit
   :commands (magit magit-list-repositories)
   :config (setq magit-diff-refine-hunk nil)
@@ -121,10 +124,14 @@
       ("ID" 6 t)
       (,(flycheck-error-list-make-last-column "Message" 'Checker) 0 t)]))
 
-(use-package flymake-shellcheck
-  :commands flymake-shellcheck-load
-  :init
-  (add-hook 'sh-mode-hook 'flymake-shellcheck-load))
+;; (use-package flymake-shellcheck
+;;   :commands flymake-shellcheck-load
+;;   :init
+;;   (add-hook 'sh-mode-hook 'flymake-shellcheck-load))
+
+(use-package sunrise
+  :commands (sunrise sunrise-cd)
+  :config (setq sunrise-cursor-follows-mouse nil))
 
 (use-package projectile
   :commands (projectile-mode)
@@ -144,6 +151,26 @@
 ;;=====================================================================
 ;;# Integration
 
+(use-package lsp-mode
+  :init
+  ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
+  (setq lsp-keymap-prefix "C-c l")
+  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
+         ;; (XXX-mode . lsp)
+         ;; if you want which-key integration
+         (lsp-mode . lsp-enable-which-key-integration))
+  :commands lsp)
+
+;; optionally
+(use-package lsp-ui :commands lsp-ui-mode)
+;; if you are ivy user
+(use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
+;; (use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+
+;; optionally if you want to use debugger
+;; (use-package dap-mode)
+;; (use-package dap-LANGUAGE) to load the dap adapter for your language
+
 (use-package py-autopep8
   ;; :hook python-mode
   :commands py-autopep8
@@ -156,16 +183,14 @@
 ;;  ; (add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
 ;;))
 
-(use-package x509-mode)
-
 (use-package tramp-term
   :commands tramp-term)
 
 ;; eir
 
 (autoload #'eir-eval-in-ielm "eval-in-repl-ielm" nil t)
-(define-key emacs-lisp-mode-map (kbd "<C-return>") 'eir-eval-in-ielm)
-(define-key lisp-interaction-mode-map (kbd "<C-return>") 'eir-eval-in-ielm)
+(bind-key "<C-return>" #'eir-eval-in-ielm 'emacs-lisp-mode-map)
+(bind-key "<C-return>" #'eir-eval-in-ielm 'lisp-interaction-mode-map)
 
 ;; (autoload #'eir-eval-in-ruby "eval-in-repl-ruby" nil t)
 ;; (define-key ruby-mode-map (kbd "<C-return>") 'eir-eval-in-ruby)
@@ -176,7 +201,9 @@
 
 (autoload #'eir-eval-in-python "eval-in-repl-python" nil t)
 (add-hook 'python-mode-hook
-          #'(lambda () (local-set-key (kbd "<C-return>") 'eir-eval-in-python)))
+          #'(lambda ()
+              (local-set-key (kbd "<C-return>") 'eir-eval-in-python)
+              (bind-key "<C-return>" #'eir-eval-in-python 'python-mode-map)))
 
 ;;=====================================================================
 ;;# Tweaks & Features
@@ -187,8 +214,17 @@
   :config
   (setq aw-keys '(?j ?k ?l ?a ?s ?d ?f ?g ?h)))
 
-(use-package hyperbole
-  :bind (("M-<return>" . hyperbole-mode)))
+(use-package treemacs
+  :commands (treemacs)
+  :config
+  (require 'treemacs-evil)
+  (require 'treemacs-projectile))
+
+(use-package treemacs-magit
+  :commands (treemacs-magit))
+
+(use-package treemacs
+  :commands (treemacs))
 
 ;; Hideshow
 ;; (defun +data-hideshow-forward-sexp (arg)
@@ -232,6 +268,29 @@
          ("C-<tab>" . company-complete))
   :init  (require 'company-flyspell))
 
+(add-to-list 'load-path "~/.emacs.d/elpa/hyperbole-8.0.0/")
+(use-package hyperbole
+  :bind (("M-<return>"  . hyperbole-mode)
+        ;; ("C-h h"       . hyperbole-mode)
+         ("S-<mouse-2>" . hyperbole-mode))
+  :config
+    (defun hui:actype (&optional default-actype prompt)
+    "Using optional DEFAULT-ACTYPE, PROMPT for and return a button action type.
+    DEFAULT-ACTYPE may be a valid symbol or symbol name."
+    (when (and default-actype (symbolp default-actype))
+        (setq default-actype (symbol-name default-actype)
+        default-actype (actype:def-symbol default-actype)
+        default-actype (when default-actype (symbol-name default-actype))))
+    (if (or (null default-actype) (stringp default-actype))
+        (let ((actype-name
+            (hargs:read-match (or prompt "Button's action type: ")
+                    (mapcar #'list (htype:names 'actypes))
+                    nil t default-actype 'actype)))
+        (or (actype:def-symbol actype-name) (intern actype-name)))
+      (hypb:error "(actype): Invalid default action type received")))
+)
+
+
 ;; Ivy/counsel/swiper
 (add-to-list 'load-path "~/.emacs.d/swiper-0.13.0/")
 (use-package ivy
@@ -239,12 +298,12 @@
          ("<f6>" . ivy-resume))
   :config (setq ivy-use-virtual-buffers t)
           ;(setq enable-recursive-minibuffers t)
-          (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+          (bind-key "C-r" #'counsel-minibuffer-history 'minibuffer-local-map)
   :commands (ivy-mode))
 
 (use-package counsel
   :bind (("C-c i" . counsel-imenu))
-  :config (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+  :config (bind-key "C-r" #'counsel-minibuffer-history 'minibuffer-local-map)
   :commands (ivy-mode))
 
 (use-package swiper
@@ -264,7 +323,7 @@
 (use-package crux
   :bind (("C-c e" . crux-eval-and-replace)
          ;("C-c o" . crux-open-with)
-         ("C-c r" . crux-rename-file-and-buffer)
+         ("C-c C-r" . crux-rename-file-and-buffer)
          ("C-x 4 t" . crux-transpose-windows)))
 
 (require 'wrap-region)
@@ -312,6 +371,7 @@
 
 (setq markdown-asymmetric-header t) ; don't use symmetric markdown header
 
+(add-hook 'markdown-mode-hook (lambda ()
 (setq-local imenu-generic-expression-markdown
    '(;; ("title" "^\\(.*\\)[\n]=+$" 1)
      ;; ("h2-"   "^\\(.*\\)[\n]-+$" 1)
@@ -323,7 +383,6 @@
      ("h6"    "^###### \\(.*\\)$" 1)
      ("fn"    "^\\[\\^\\(.*\\)\\]" 1)
 ))
-(add-hook 'markdown-mode-hook (lambda ()
   (setq-local imenu-generic-expression imenu-generic-expression-markdown)))
 
 (autoload 'hcl-mode "hcl-mode" "hcl-mode; local major mode for hcl files" t)
@@ -357,7 +416,7 @@
   :mode (("\\.ya?ml\\(\\'\\|\\.\\)" . yaml-mode))
   :config
         (require 'yaml-path)
-        (define-key yaml-mode-map (kbd "C-c C-p") 'yaml-path/path)
+        (bind-key "C-c C-p" #'yaml-path/path 'yaml-mode-map)
 )
 
 (defun outline-hook-yaml ()

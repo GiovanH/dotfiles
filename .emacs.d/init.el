@@ -18,6 +18,14 @@
     `(eval-after-load ,file (lambda () ,@body)))
 ))
 
+(if (not (fboundp 'bind-key)) (progn
+  (message "polyfilling bind-key")
+  ;;(bind-key (kbd "C-<return>") #'my-org-ctrl-return-dwim 'org-mode-map)
+  ;;(define-key global-map (kbd "<f5>") 'revert-buffer)
+  (defmacro bind-key (key-name command &optional keymap)
+    `(define-key (symbol-value (or ,keymap 'global-map) (kbd ,key-name) ,command)))
+))
+
 ;;# Faces
 
 (custom-set-faces
@@ -26,6 +34,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(default ((t (:family "DejaVu Sans Mono" :foundry "PfEd" :slant normal :weight normal :height 110 :width normal :spacing monospace))))
+ '(help-key-binding ((t (:background "#222" :foreground "#f6f3e8"))))
  '(linkd-generic-link ((t (:inherit bookmark-menu-heading))))
  '(region ((t (:background "#000" :foreground "#f6f3e8"))))
  '(trailing-whitespace ((t (:background "unspecified" :underline "#CC9393"))))
@@ -107,6 +116,14 @@ candidates, as follows:
   (let ((sym (intern opt)))
     (set sym (not (eval sym))) (message "`%s' is now %s" opt (eval sym))))
 
+(defun windowsify-path (path)
+  (replace-regexp-in-string "/\\([a-z]\\)/" "\\1:/" path nil nil))
+
+;;(defun regenerate-autoloads ()
+;;  (interactive)
+;;  ;(package-generate-autoloads package-name default-directory)
+;;)
+
 (defun org-toggle-wysiwyg ()
   (interactive)
   (toggle "org-hide-emphasis-markers")
@@ -119,15 +136,45 @@ candidates, as follows:
   (save-excursion
     (indent-region (point-min) (point-max) nil)))
 
+(defun string-to-macro (string)
+  "Convert a string to a series of keystrokes appropriate for kbd-read-macro"
+  (mapconcat 'identity ;;Map identity of list joined by space (last arg)
+    (cl-substitute "SPC" " "   ;;Substitute SPC for actual spaces
+      (split-string string "") ;;Split string by char
+      :test #'string-equal     ;;Comparing spaces can be funky by default
+    )
+    " ") ;;The joiner
+  )
+
+(defun shell-term (new-buffer-name cmd &rest switches)
+  "Create a new buffer running command `cmd' with the provided switches"
+  ;;(setq term-ansi-buffer-name (concat "*" new-buffer-name "*"))
+  (setq term-ansi-buffer-name (generate-new-buffer-name (or new-buffer-name "term")))
+  (setq term-buffer (set-buffer (apply 'make-term term-ansi-buffer-name cmd nil switches)))
+  (term-mode)
+  ;; (term-char-mode)
+  (term-set-escape-char ?\C-x)
+  term-buffer)
+
+(defun termwith (title commandlist)
+  "Create a new buffer running a bash shell and send it a list of lines"
+  (let* ((shell-buff (shell-term title "/bin/bash"))
+         (proc (get-buffer-process shell-buff)))
+    (dolist (command commandlist)
+      (term-send-string proc "\n")
+      (accept-process-output proc)
+      (term-send-string proc command))
+    shell-buff))
+
 (defun bash ()
-  "Open bash in `ansi-term'"
+  "Open bash in `ansi-term' with full login configuration"
   (interactive)
-  (ansi-term "/bin/bash"))
+  (switch-to-buffer (shell-term nil "/bin/bash" "--login")))
 
 (defun debug-on-error ()
   "Set `debug-on-error' to t"
   (interactive)
-  (setq debug-on-error t))
+  (toggle "debug-on-error"))
 
 (defun copy-current-kill-to-clipboard ()
   "Backup function for copying to system clipboard (unused)"
@@ -155,8 +202,8 @@ candidates, as follows:
   (interactive
     (list
     (completing-read
-    "Zone out to: "
-    (mapcar 'symbol-name zone-programs))))
+      "Zone out to: "
+      (mapcar 'symbol-name zone-programs))))
   (let ((zone-programs (list (intern pgm))))
     (zone)))
 
@@ -175,37 +222,54 @@ candidates, as follows:
 (global-set-key "\C-xf" ctl-x-5-map)
 
 ;;Focus buffer list instead of backgrounding
-(global-set-key "\C-x\C-b" 'buffer-menu-other-window)
+(bind-key "C-x C-b" #'buffer-menu-other-window)
+
+;;Get back to minibuffer w/o mouse
+(bind-key "C-c o" #'switch-to-minibuffer)
 
 ;;Mouse buttons
 ;;These don't work through Citrix. :(
-(global-set-key (kbd "<mouse-6>") 'next-buffer)
-(global-set-key (kbd "<mouse-7>") 'previous-buffer)
+(bind-key "<mouse-6>" #'next-buffer)
+(bind-key "<mouse-7>" #'previous-buffer)
 
 ;;elisp eval functions
-(add-hook 'emacs-lisp-mode-hook
-  (lambda () (local-set-key (kbd "C-c e") 'eval-buffer)))
-(add-hook 'emacs-lisp-mode-hook
-  (lambda () (local-set-key (kbd "C-c r") 'eval-region)))
-
+;; todo echo output to messages
+(bind-key "C-c e" #'eval-buffer 'emacs-lisp-mode-map)
+(bind-key "C-c r" #'eval-region 'emacs-lisp-mode-map)
+(add-hook 'emacs-lisp-mode-hook (lambda ()
+   (setq-local evil-shift-width 2)))
 
 (add-hook 'emacs-lisp-mode-hook
   (lambda ()
     (setq-local imenu-generic-expression
       (append
        '(("Headers" "^;; ?# ?\\(.+\\)" 1)
-         ;("h2" "^;; ?## ?\\(.+?\\)" 1)
-                                        ;("h" "^;; ?###+ ?\\(.+?\\)" 1)
+         ;;("h2" "^;; ?## ?\\(.+?\\)" 1)
+         ;;("h" "^;; ?###+ ?\\(.+?\\)" 1)
          )
        imenu-generic-expression)
     )
   )
 )
 
+;;Unbind gnu cruft
+(dolist
+  (junkkey '(
+    "C-h a"
+    "C-h g"
+    "C-h n"
+    "C-h o"
+    "C-h t"
+    "C-h w"
+  ))
+  (global-unset-key (kbd junkkey)))
 
 ;;Refresh file
-(define-key global-map (kbd "<f5>") 'revert-buffer)
-(define-key global-map (kbd "<XF86Reload>") 'revert-buffer)
+(bind-key "<f5>" #'revert-buffer)
+(bind-key "<XF86Reload>" 'revert-buffer)
+
+;;Quick reference keymap
+(bind-key "C-h M" #'describe-keymap)
 
 ;; not working :'(
 ;; (defun grep-recursive-directory ()
@@ -215,8 +279,8 @@ candidates, as follows:
 ;; (define-key dired-mode-map (kbd "C-c g") 'grep-recursive-directory)
 
 ;;Use ctrl+shift+c/v in x11 mode, like a terminal.
-(global-set-key (kbd "C-S-C") 'kill-ring-save)
-(global-set-key (kbd "C-S-V") 'yank)
+(bind-key "C-S-C" #'kill-ring-save)
+(bind-key "C-S-V" #'yank)
 
 ;;Backwards window nav for 3+ windows.
 (defun other-window-backwards ()
@@ -229,22 +293,22 @@ candidates, as follows:
 ;;(global-set-key (kbd "C-x O") 'other-window-backwards)
 
 ;;Cycle buffers with web page forward/backward keys
-(global-set-key (kbd "<M-right>") 'next-buffer)
-(global-set-key (kbd "<M-left>") 'previous-buffer)
-(global-set-key (kbd "<M-S-right>") 'other-window)
-(global-set-key (kbd "<M-S-left>") 'other-window-backwards)
+(bind-key "<M-right>" #'next-buffer)
+(bind-key "<M-left>" #'previous-buffer)
+(bind-key "<M-S-right>" #'other-window)
+(bind-key "<M-S-left>" #'other-window-backwards)
 
 ;;function keys for some handy emacs things
-(global-set-key [f12] 'indent-buffer)
-(global-set-key (kbd "C-<f10>") 'menu-bar-open)
-(global-set-key (kbd "<f9>") 'sort-lines)
-(global-set-key (kbd "C-c r") 'replace-regexp)
+(bind-key "<f12>" #'indent-buffer)
+(bind-key "C-<f10>" #'menu-bar-open)
+(bind-key "<f9>" #'sort-lines)
+;; (bind-key "C-c r" #'replace-regexp)
 
 ;;ffap under user f
-(global-set-key (kbd "C-c C-f") 'ffap)
+(bind-key "C-c C-f" #'ffap)
 
 ;;C-S-/ to toggle comment
-(global-set-key (kbd "C-?") 'comment-or-uncomment-region)
+(bind-key "C-?" #'comment-or-uncomment-region)
 
 (defun apply-to-region (func)
   (undo-boundary)
@@ -277,7 +341,7 @@ candidates, as follows:
       (delete-file tmpfile)
       (replace-or-display arg expr res))
   )
-(global-set-key (kbd "C-S-e") 'py-eval-region)
+(bind-key "C-S-e" #'py-eval-region)
 
 ;;=====================================================================
 ;;#Hooks
@@ -340,6 +404,10 @@ candidates, as follows:
 ;;=====================================================================
 ;;#Configuration
 
+;; Space key prints itself in minibuffer
+(define-key minibuffer-local-completion-map " " 'self-insert-command)
+(define-key minibuffer-local-must-match-map " " 'self-insert-command)
+
 ;;Use left alt as meta key
 (setq x-alt-keysym 'meta)
 
@@ -356,6 +424,12 @@ candidates, as follows:
 (setq-default buffer-file-coding-system 'utf-8-unix) ; Correct line endings
 (setq sentence-end-double-space nil)
 (setq require-final-newline t)
+
+(prefer-coding-system       'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
 
 ;;Enhancements
 (setq message-log-max 10000)            ; Increase message log capacity
@@ -403,6 +477,8 @@ candidates, as follows:
 ;; Language settings
 
 (setq sh-basic-offset 2)
+(add-hook 'shell-mode-hook (lambda ()
+   (setq-local evil-shift-width 2)))
 (setq ess-fancy-comments nil)
 
 (setq python-shell-interpreter "python3")
@@ -410,11 +486,65 @@ candidates, as follows:
 (add-hook 'term-mode-hook
   (lambda ()
     (setq-local show-trailing-whitespace nil)
-    (define-key term-raw-map (kbd "C-S-v") 'term-paste)
+    (bind-key "C-S-v" #'term-paste 'term-raw-map)
+    (bind-key "C-|" #'term-kill-subjob 'term-raw-map)
 ))
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
 (add-to-list 'interpreter-mode-alist '("python3" . python-mode))
+
+(add-hook 'python-mode-hook
+          #'(lambda () (outline-minor-mode 1)))
+
+(add-hook 'python-mode-hook
+  (lambda ()
+    (setq-local imenu-generic-expression
+      (append
+       '(("Root Comment" "^# ?\\(.+\\)" 1)
+         )
+       imenu-generic-expression))))
+
+(defun python-outline-level ()
+  (or
+   ;; Commented outline heading
+   (and (string-match (rx
+		       (* space)
+		       (one-or-more (syntax comment-start))
+		       (one-or-more space)
+		       (group (one-or-more "\*"))
+		       (one-or-more space))
+		      (match-string 0))
+	(- (match-end 0) (match-beginning 0)))
+
+   ;; Python keyword heading, set by number of indentions
+   ;; Add 8 (the highest standard outline level) to every Python keyword heading
+   (+ 8 (- (match-end 0) (match-beginning 0)))))
+
+(defun python-mode-outline-hook ()
+  (setq outline-level 'python-outline-level)
+
+  (setq outline-regexp
+	(rx (or
+	     ;; Commented outline heading
+	     (group
+	      (* space)	 ; 0 or more spaces
+	      (one-or-more (syntax comment-start))
+	      (one-or-more space)
+	      ;; Heading level
+	      ;; (group (repeat 1 8 "\*"))  ; Outline stars
+	      ;; (one-or-more space))
+          )
+
+	     ;; Python keyword heading
+	     (group
+	      ;; Heading level
+	      (group (* space))	; 0 or more spaces
+	      bow
+	      ;; Keywords
+	      (or "class" "def" "else" "elif" "except" "for" "if" "try" "while")
+	      eow)))))
+
+(add-hook 'python-mode-hook 'python-mode-outline-hook)
 
 (add-to-list 'auto-mode-alist '("build.gradle" . java-mode))
 
@@ -440,14 +570,30 @@ candidates, as follows:
   (add-to-list 'Info-directory-list (expand-file-name "~/.local/share/info/"))
   (add-to-list 'Info-directory-list (expand-file-name "~/info/")))
 
+(with-eval-after-load 'image-dired
+(defun image-dired-format-properties-string (buf file props comment)
+  "Format display properties.
+BUF is the associated Dired buffer, FILE is the original image file
+name, PROPS is a stringified list of tags and COMMENT is the image file's
+comment."
+  (format-spec
+   image-dired-display-properties-format
+   (list
+    (cons ?b (or buf ""))
+    (cons ?f (replace-regexp-in-string "/\\([a-z]\\)/" "\\1:/" file nil nil))
+    (cons ?t (or props ""))
+    (cons ?c (or comment "")))))
+
+)
+
 ;;Tramp
 (require 'tramp)
-(customize-set-variable
- 'tramp-ssh-controlmaster-options
+(setq
+ tramp-ssh-controlmaster-options
  (concat
    "-o ControlPath=~/.ssh/connections/%%r@%%h:%%p "
    "-o ControlMaster=auto -o ControlPersist=yes"))
-(customize-set-variable 'tramp-use-ssh-controlmaster-options nil)
+(setq tramp-use-ssh-controlmaster-options nil)
 
 (setq vc-handled-backends '(Git))
 (setq vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)"
@@ -457,8 +603,21 @@ candidates, as follows:
 (setq ls-lisp-dirs-first t)             ; display dirs first in lisp-native dired
 ;; Enable fully editable wdired
 (customize-set-variable 'wdired-allow-to-change-permissions t)
+(eval-after-load "dired" '(progn
+  (bind-key "C-}" #'dired-hide-subdir 'dired-mode-map)
+  (bind-key "C-{" #'dired-hide-subdir 'dired-mode-map)
+  (bind-key "<tab>" #'dired-hide-subdir 'dired-mode-map)
+  (bind-key "C-k" #'dired-kill-subdir 'dired-mode-map)
+))
 
-;;Outlining
+
+;; (with-eval-after-load 'dired
+;;   (require 'dired-x)
+;;   ;; Set dired-x global variables here.  For example:
+;;   ;; (setq dired-x-hands-off-my-keys nil)
+;; ))
+
+;;# Outlining
 
 ;; Sublime-style fold/unfold keys
 (add-hook 'outline-minor-mode-hook #'(lambda ()
@@ -467,13 +626,13 @@ candidates, as follows:
       (interactive)
       (outline-show-all)
       (outline-hide-body))
-    (local-set-key (kbd "C-!")     'outline-toggle-children)
-    (local-set-key (kbd "C-<S-1>") 'outline-toggle-children)
-    (local-set-key (kbd "C-{")     'outline-hide-subtree)
-    (local-set-key (kbd "C-<S-[>") 'outline-hide-subtree)
-    (local-set-key (kbd "C-}")     'outline-show-subtree)
-    (local-set-key (kbd "C-<S-]>") 'outline-show-subtree)
-    (local-set-key (kbd "<C-return>") 'outline-cycle)
+    (bind-key "C-!"     #'outline-toggle-children 'outline-minor-mode-map)
+    (bind-key "C-<S-1>" #'outline-toggle-children 'outline-minor-mode-map)
+    (bind-key "C-{"     #'outline-hide-subtree 'outline-minor-mode-map)
+    (bind-key "C-<S-[>" #'outline-hide-subtree 'outline-minor-mode-map)
+    (bind-key "C-}"     #'outline-show-subtree 'outline-minor-mode-map)
+    (bind-key "C-<S-]>" #'outline-show-subtree 'outline-minor-mode-map)
+    (bind-key "<C-return>" #'outline-cycle 'outline-minor-mode-map)
 ))
 
 ;; (add-hook 'prog-mode-hook       'outline-minor-mode)
@@ -486,21 +645,50 @@ candidates, as follows:
     (ediff-get-region-contents ediff-current-difference 'A ediff-control-buffer)
     (ediff-get-region-contents ediff-current-difference 'B ediff-control-buffer))))
 (add-hook 'ediff-keymap-setup-hook
-  (lambda () (define-key ediff-mode-map "B" 'ediff-copy-both-to-C)))
+  (lambda () (bind-key "B" #'ediff-copy-both-to-C 'ediff-mode-map)))
 
 (setq ediff-window-setup-function 'ediff-setup-windows-default) ;Frame configuration
 (setq ediff-diff-options "-w")
 (setq ediff-split-window-function 'split-window-horizontally)
 
 ;; Run/highlight code using babel in org-mode
-(eval-after-load 'org'
+(with-eval-after-load 'org
   (org-babel-do-load-languages
    'org-babel-load-languages
    '(
      (python . t)
      (shell . tool-bar-mode) ; (sh . tool-bar-mode) in older emacs versions
      ;; Include other languages here...
-     )))
+     ))
+  (defun my-org-ctrl-return-dwim ()
+    "DWIM ctrl-return in org mode: execute babel block or insert heading"
+    (interactive)
+    (if (org-babel-get-src-block-info 'light)
+        (org-babel-execute-maybe)
+      (org-insert-heading-respect-content))
+  )
+  (bind-key "C-<return>" #'my-org-ctrl-return-dwim 'org-mode-map)
+
+  ;; :hidden property on source blocks folds them when file opened
+  (defun individual-visibility-source-blocks ()
+    "Fold some blocks in the current buffer."
+    (interactive)
+      ;; (org-show-block-all)
+      (org-block-map (lambda ()
+        (let ((case-fold-search t))
+          (when (and
+                 (save-excursion
+                   (beginning-of-line 1)
+                   (looking-at org-block-regexp))
+                 (cl-assoc
+                  ':hidden
+                  (cl-third
+                   (org-babel-get-src-block-info t))))
+            (org-hide-block-toggle t))))))
+  (add-hook
+   'org-mode-hook
+   #'individual-visibility-source-blocks)
+)
 ;; Syntax highlight in #+BEGIN_SRC blocks
 (setq org-src-fontify-natively t)
 ;; Don't prompt before running code in org
@@ -509,7 +697,13 @@ candidates, as follows:
 ;;===================================================
 ;;# Bootstrap: Now load another file
 
-(dolist (exfile '("~/.emacs.d/init-extra.el" "~/.emacs.d/init-local.el"))
-  (if (file-exists-p exfile) (load-file exfile)))
+(add-to-list 'load-path "~/.emacs.d/lisp/")
+(require 'inferior-term)
+
+(dolist (exfile '(
+  "~/.emacs.d/init-extra.el"
+  "~/.emacs.d/init-local.el"
+  "~/.emacs.d/ev-init.el"))
+    (if (file-exists-p exfile) (load-file exfile)))
 
 ;;=====================================================================

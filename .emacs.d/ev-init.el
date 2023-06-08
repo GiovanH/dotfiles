@@ -1,4 +1,8 @@
+(if (not (fboundp 'evil-mode)) (progn
+
 (message "evil grows in the dark")
+
+;; https://github.com/noctuid/evil-guide
 
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 
@@ -41,20 +45,31 @@
   (setq evil-undo-system 'undo-fu)
   :config
   (evil-mode 1)
-  ;(add-hook 'with-editor-mode-hook 'evil-insert-state)
-  (define-key evil-normal-state-map "u" 'undo-fu-only-undo)
-  (define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo))
+  (evil-define-key 'normal 'global
+    "u" 'undo-fu-only-undo
+    "\C-r" 'undo-fu-only-redo)
+  ;; C-g stops highlighting too
+  (defadvice keyboard-quit (before evil activate)
+    (when (fboundp 'evil-ex-nohighlight)
+      (evil-ex-nohighlight)))
+)
+
+(use-package evil-visual-mark-mode
+  :config
+  (evil-visual-mark-mode 1))
 
 (message "evil grows in cracks and holes")
 
-(add-to-list 'load-path (car (file-expand-wildcards "~/.emacs.d/elpa/evil-collection-*")))
+(add-to-list 'load-path (car 
+  (file-expand-wildcards "~/.emacs.d/elpa/evil-collection-*")))
 (require 'evil-collection)
 
 ;; Manually enable evil-collection extensions for modes in this list
 
 (defun evil-collection-loadmode (mode &optional altmode)
   (let ((setupfn (concat "evil-collection-" mode "-setup"))
-        (elfile (car (file-expand-wildcards (concat "~/.emacs.d/elpa/evil-collection-*/modes/" mode "/evil-collection-" mode ".el")))))
+        (elfile (car (file-expand-wildcards 
+                       (concat "~/.emacs.d/elpa/evil-collection-*/modes/" mode "/evil-collection-" mode ".el")))))
     (if (not elfile)
         (message "no file to load %s with %s" mode setupfn)
       (autoload (intern setupfn) elfile)
@@ -82,6 +97,8 @@
     (evil-collection-loadmode "ztree" "ztree-dir")
   (wrong-type-argument (message "Failed evil-loading ztree")))
 
+(evil-collection-loadmode "org" "org-mode")
+
 (use-package magit
   :commands (magit)
   :config (evil-collection-loadmode "magit")
@@ -90,9 +107,26 @@
 
 (message "and lives in people's minds")
 
-(define-key evil-normal-state-map "x" 'execute-extended-command) ;; N x = M-x
-(define-key evil-normal-state-map "q" 'quit-window) ;; restore emacs q (evil macros don't work)
-(define-key evil-normal-state-map [escape] nil) ; restore M- behavior in normal mode
+(evil-define-key 'normal 'global
+ "x" 'execute-extended-command ;; N x = M-x
+ "g r" 'revert-buffer
+ "q" 'quit-window ;; restore emacs q (evil macros don't work???)
+ [escape] nil ; restore M- behavior in normal mode
+)
+
+(evil-define-key 'visual 'global
+  (kbd "<backtab>") 'evil-shift-left
+)
+
+(evil-define-key 'visual org-mode-map
+  "*" (lambda () (interactive) (org-emphasize ?*))
+  "/" (lambda () (interactive) (org-emphasize ?/))
+  "_" (lambda () (interactive) (org-emphasize ?_))
+  "=" (lambda () (interactive) (org-emphasize ?=))
+  "~" (lambda () (interactive) (org-emphasize ?~))
+  "+" (lambda () (interactive) (org-emphasize ?+))
+)
+
 (define-key evil-visual-state-map (kbd "<backtab>") 'evil-shift-left)
 
 (defun evil-quick-replace-selection (start end)
@@ -136,8 +170,4 @@
     (evil-emacs-state)
 ))
 
-(defun my-reload-emacs-configuration ()
-  (interactive)
-  (load-file "~/.emacs.d/init.el")
-  (load-file "~/.emacs.d/ev-init.el"))
-
+))
