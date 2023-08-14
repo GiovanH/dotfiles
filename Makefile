@@ -7,6 +7,7 @@ allfiles = \
 	$(addprefix home/,.bash_personal .bash_colors .bash_completion .bash_profile .bashrc .gitconfig .gitignore .vimrc .fonts.conf .profile_CYGWIN_NT) \
 	$(addprefix reg/,bog.runasinvoker.reg gio.makebak.reg gio.toggledisabled.reg) \
 	$(addprefix scripts/,jqt shlex j2) \
+	$(addprefix support/,gum_polyfill.sh) \
 	$(addprefix .emacs.d/,init.el init-extra.el ev-init.el) \
 	.githooks/prepare-commit-msg
 
@@ -59,6 +60,9 @@ local/% :: $(dotfiles)/local/%
 	$(call copy_cmd)
 
 scripts/% :: $(dotfiles)/scripts/%
+	$(call copy_cmd)
+
+support/% :: $(dotfiles)/support/%
 	$(call copy_cmd)
 
 .ssh/config.j2: ICOM = \#

@@ -1,4 +1,7 @@
 #!/bin/bash
+
+source ~/dotfiles/support/gum_polyfill.sh &
+
 # Common functions
 
 alias tsv="column -t -s $'\t'" # Pretty-print tsv data
@@ -96,6 +99,12 @@ dmap() {( # set -e  # fail early
     popd &>/dev/null
   done
 )}
+
+pip_update() {
+  choice_table=$(gum spin --title "Loading outdated packages" --show-output -- pip list --outdated)
+  choices=$(gum choose --no-limit -- $(echo "$choice_table" | tail -n +3 | cut -d' ' -f 1))
+  gum confirm "$choices\nUpdate?" && python3 -m pip install -U $choices
+}
 
 # Unified diff piped into vim for colouring.
 vdiff() { diff --unified $@ | vim -R - ; }

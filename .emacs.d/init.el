@@ -152,8 +152,8 @@ candidates, as follows:
   (setq term-ansi-buffer-name (generate-new-buffer-name (or new-buffer-name "term")))
   (setq term-buffer (set-buffer (apply 'make-term term-ansi-buffer-name cmd nil switches)))
   (term-mode)
-  ;; (term-char-mode)
-  (term-set-escape-char ?\C-x)
+  (term-char-mode)
+  ;;(term-set-escape-char ?\C-x)
   term-buffer)
 
 (defun termwith (title commandlist)

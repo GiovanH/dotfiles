@@ -1,4 +1,4 @@
-(if (not (fboundp 'evil-mode)) (progn
+(if (not (fboundp 'evil)) (progn
 
 (message "evil grows in the dark")
 
@@ -60,7 +60,7 @@
 
 (message "evil grows in cracks and holes")
 
-(add-to-list 'load-path (car 
+(add-to-list 'load-path (car
   (file-expand-wildcards "~/.emacs.d/elpa/evil-collection-*")))
 (require 'evil-collection)
 
@@ -68,7 +68,7 @@
 
 (defun evil-collection-loadmode (mode &optional altmode)
   (let ((setupfn (concat "evil-collection-" mode "-setup"))
-        (elfile (car (file-expand-wildcards 
+        (elfile (car (file-expand-wildcards
                        (concat "~/.emacs.d/elpa/evil-collection-*/modes/" mode "/evil-collection-" mode ".el")))))
     (if (not elfile)
         (message "no file to load %s with %s" mode setupfn)

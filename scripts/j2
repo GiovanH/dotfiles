@@ -41,8 +41,8 @@ def auto_render_template(template_path, input_data):
         raise ValueError("File '{}' is not a jinja2 template ending with .j2".format(template_path))
     if os.path.isfile(out_path) and NO_CLOBBER:
         raise IOError("File exists: '{}' and no-clobber is {}.".format(out_path, NO_CLOBBER))
-    with open(out_path, 'w') as fp:
-        fp.write(render_template(template_path, input_data))
+    with open(out_path, 'wb') as fp:
+        fp.write(render_template(template_path, input_data).encode('utf-8'))
 
 def parse_args():
     import argparse
