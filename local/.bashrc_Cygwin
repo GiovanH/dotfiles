@@ -1,0 +1,132 @@
+#!/bin/bash
+# Bash profile subfile for cygwin
+
+export COLOR_HOST=$COLOR_GREEN
+
+pathmunge "/cygdrive/c/Program Files/7-Zip"
+
+# Python configuration
+
+export PYTHONIOENCODING=UTF-8
+
+export PYTHONPATH="C:\Users\Seth\Projects\python\lib"
+
+alias anaconda3="/cygdrive/c/ProgramData/anaconda3/python.exe"
+alias python3="py -3"
+# alias python38="py -38"
+# alias python37="py -37"
+# alias python36="py -36"
+
+alias python2="/cygdrive/c/Program\ Files/Python27/python2.exe"
+alias python27="/cygdrive/c/Program\ Files/Python27/python2.exe"
+
+alias killall="taskkill /f /im"
+
+# Cygwin
+
+alias sudo="cygstart --action=runas"
+
+alias ps="ps -W"
+
+## Use case-insensitive filename globbing
+shopt -s nocaseglob
+
+## Ignore carriage returns.
+(set -o igncr) 2>/dev/null && set -o igncr; # comment is needed
+
+# Set ~ to %home%
+grep -qxF 'db_home: /%H' /etc/nsswitch.conf \
+  || echo 'db_home: /%H' >> /etc/nsswitch.conf \
+  || sudo bash -c "echo 'db_home: /%H' >> /etc/nsswitch.conf"
+
+# function ensure_ev_daemon {
+#     if [ "$(grep -a -C5 "evil-init" /proc/*/cmdline | grep -a "daemon")" ]; then
+#         :
+#     else
+#         ev --daemon
+#     fi
+# }
+
+installsoftware() {
+  doinstall() {( set -e
+    sourceif ~/.installsoftware || :
+    url="$1"
+    splitpath "$url"
+    slug="soft$(sluggify $filename)"
+    if [ -z "${!slug}" ]; then
+      wget "$url" \
+        && extractto "$filename" ~/.local/bin/ \
+        && rm -v "$filename"
+      echo "$slug=\"$(date -I)\"" >> ~/.installsoftware
+    else
+      echo skip $filename
+      return 1
+    fi
+  )}
+
+  doinstall "http://www.maddogsw.com/cmdutils/cmdutils.zip"
+  doinstall "https://github.com/jbruchon/jdupes/releases/download/v1.21.3/jdupes-1.21.3-win64.zip" # has subfolder
+  doinstall "https://github.com/charmbracelet/gum/releases/download/v0.10.0/gum_0.10.0_Windows_x86_64.zip" # has man
+  doinstall "https://github.com/casey/just/releases/download/1.13.0/just-1.13.0-x86_64-pc-windows-msvc.zip" # has man
+  # doinstall "https://github.com/tavianator/bfs/archive/refs/tags/2.6.3.zip" \
+  #   && (cd ~/.local/bin/bfs-2.6.3/; make -j)
+
+  mv -v ~/.local/bin/manpages/* ~/.local/man/
+  mv -v ~/.local/bin/completions/* ~/.local/share/completions/
+
+  mkdir -p ~/.local/man/man1/
+  mv -v ~/.local/man/*.1.gz ~/.local/man/man1/
+  mv -v ~/.local/bin/*.1 ~/.local/man/man1/
+  (cd ~/.local; delete_empty_dirs)
+}
+
+pathmunge "${HOME}/.local/bin/jdupes-1.21.3-win64"
+
+# Node version manager lazy-loader
+if [[ -d "$HOME/.nvm" ]]; then
+  nvm() {
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+    echo "nvm initialized"
+    nvm $@
+  }
+fi
+
+copy_function clean super_clean
+clean() {
+  super_clean
+
+  _clean_paths "C:/Users/Seth/AppData/Local/Temp"
+  _clean_paths "C:/Users/Seth/AppData/Local/Unity/cache"
+  _clean_paths "C:/Users/Seth/AppData/Local/Microsoft/PowerToys/Updates"
+  _clean_paths "C:/Windows/SysWOW64/Logfile.PML"
+  _clean_paths "C:/ProgramData/NVIDIA Corporation/NvTelemetry"
+
+  _clean_files_in_dir "C:/cygwin64/tmp/"
+  _clean_files_in_dir "C:/ProgramData/NVIDIA Corporation/Downloader/"
+  _clean_files_in_dir "C:/ProgramData/Apple/Installer Cache/"
+  _clean_files_in_dir "C:/Users/Seth/AppData/Roaming/Adobe-Backup/Common/Media Cache Files/"
+  _clean_files_in_dir "C:/Users/Seth/AppData/Roaming/Jedi/"
+  _clean_files_in_dir "C:/Users/Seth/AppData/Roaming/RenPy/backups/"
+  _clean_files_in_dir "C:/Users/Seth/AppData/Local/electron/Cache/"
+  _clean_files_in_dir "C:/Users/Seth/AppData/Local/pCloud/Cache/"
+  _clean_files_in_dir "C:/ProgramData/NVIDIA Corporation/NV_Cache/"
+
+  # _clean_files_in_dir "C:/Users/Seth/AppData/Local/Steam/htmlcache/"
+
+  _clean_paths "C:/Users/Seth/AppData/Local/Box Sync/"*.log
+  _clean_files_in_dir "C:/Users/Seth/AppData/Local/CrashDumps/"
+  _clean_paths "C:/Users/Seth/AppData/Roaming/Apple Computer/Logs/"**/*.log
+
+  _clean_files_in_dir "C:/Program Files (x86)/Steam/Logs/"
+  _clean_files_in_dir "C:/ProgramData/Intel/ShaderCache/"
+  _clean_files_in_dir "C:/Windows/LiveKernelReports/"
+  _clean_subdirs_in_dir "C:/ProgramData/Apple/Installer Cache/"
+
+  # clean "C:/Users/Seth/AppData/Roaming/BetterDiscord/plugins/MLV2_IMAGE_CACHE/*"
+  _clean_files_in_dir "C:/ProgramData/Apple Computer/Installer Cache"
+  _clean_files_in_dir "C:/Program Files/NVIDIA Corporation/Installer2"
+  _clean_files_in_dir "C:/Windows/Downloaded Installations"
+}
+

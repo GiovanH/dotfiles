@@ -4,7 +4,9 @@ dotfiles = ~/dotfiles
 footer = END PUBLIC FILE
 privtag = PRIV
 allfiles = \
-	$(addprefix home/,.bash_personal .bash_colors .bash_completion .bash_profile .bashrc .gitconfig .gitignore .vimrc .fonts.conf .profile_CYGWIN_NT) \
+	$(addprefix home/,.bash_personal .bash_colors .bash_completion .bash_profile .bashrc .gitconfig \
+	            .gitignore .vimrc .fonts.conf .minttyrc .XCompose .tmux.conf) \
+	$(addprefix local/,.bashrc_Cygwin) \
 	$(addprefix reg/,bog.runasinvoker.reg gio.makebak.reg gio.toggledisabled.reg) \
 	$(addprefix scripts/,jqt shlex j2) \
 	$(addprefix support/,gum_polyfill.sh) \
@@ -16,6 +18,15 @@ all: allfiles
 
 .PHONY: allfiles
 allfiles: $(allfiles) Makefile
+
+.PHONY: check
+check:
+	@-diff -r ./home/ ../home/ -q
+	@-diff -r ./local/ ../local/ -q
+	@-diff -r ./reg/ ../reg/ -q
+	@-diff -r ./scripts/ ../scripts/ -q
+	@-diff -r ./support/ ../support/ -q
+	@-diff -r ./.emacs.d/ ../.emacs.d/ -q
 
 define compile_cmd
 	@mkdir -p "`dirname $@`"
@@ -34,7 +45,7 @@ home/.vimrc :: $(dotfiles)/home/.vimrc
 reg/%.reg :: $(dotfiles)/reg/%.reg
 	$(call copy_cmd)
 
-.emacs.d/%.el: ICOM = \\\;
+.emacs.d/%.el: ICOM = \;
 .emacs.d/%.el :: $(dotfiles)/.emacs.d/%.el
 	$(call compile_cmd,ICOM)
 

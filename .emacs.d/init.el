@@ -34,6 +34,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(default ((t (:family "DejaVu Sans Mono" :foundry "PfEd" :slant normal :weight normal :height 110 :width normal :spacing monospace))))
+ '(comint-highlight-input ((t nil)))
  '(help-key-binding ((t (:background "#222" :foreground "#f6f3e8"))))
  '(linkd-generic-link ((t (:inherit bookmark-menu-heading))))
  '(region ((t (:background "#000" :foreground "#f6f3e8"))))
@@ -106,13 +107,13 @@ candidates, as follows:
  - With a negative prefix arg, all variables are candidates."
   (interactive
    (list (completing-read
-	  "Toggle value of option: " obarray
-	  (cond ((and current-prefix-arg
-		      (wholenump (prefix-numeric-value current-prefix-arg)))
-		 'user-variable-p)
-		(current-prefix-arg 'boundp)
-		(t (lambda (sym) (eq (get sym 'custom-type) 'boolean))))
-	  t nil 'variable-name-history)))
+      "Toggle value of option: " obarray
+      (cond ((and current-prefix-arg
+              (wholenump (prefix-numeric-value current-prefix-arg)))
+         'user-variable-p)
+        (current-prefix-arg 'boundp)
+        (t (lambda (sym) (eq (get sym 'custom-type) 'boolean))))
+      t nil 'variable-name-history)))
   (let ((sym (intern opt)))
     (set sym (not (eval sym))) (message "`%s' is now %s" opt (eval sym))))
 
@@ -153,7 +154,6 @@ candidates, as follows:
   (setq term-buffer (set-buffer (apply 'make-term term-ansi-buffer-name cmd nil switches)))
   (term-mode)
   (term-char-mode)
-  ;;(term-set-escape-char ?\C-x)
   term-buffer)
 
 (defun termwith (title commandlist)
@@ -161,6 +161,7 @@ candidates, as follows:
   (let* ((shell-buff (shell-term title "/bin/bash"))
          (proc (get-buffer-process shell-buff)))
     (dolist (command commandlist)
+      (accept-process-output proc)
       (term-send-string proc "\n")
       (accept-process-output proc)
       (term-send-string proc command))
@@ -172,7 +173,7 @@ candidates, as follows:
   (switch-to-buffer (shell-term nil "/bin/bash" "--login")))
 
 (defun debug-on-error ()
-  "Set `debug-on-error' to t"
+  "Toggle `debug-on-error'"
   (interactive)
   (toggle "debug-on-error"))
 
@@ -219,7 +220,7 @@ candidates, as follows:
 ;;# Keys
 
 ;;Quick access to frame methods w/ C-x f
-(global-set-key "\C-xf" ctl-x-5-map)
+(global-set-key (kbd "C-x f") ctl-x-5-map)
 
 ;;Focus buffer list instead of backgrounding
 (bind-key "C-x C-b" #'buffer-menu-other-window)
@@ -254,15 +255,15 @@ candidates, as follows:
 
 ;;Unbind gnu cruft
 (dolist
-  (junkkey '(
-    "C-h a"
-    "C-h g"
-    "C-h n"
-    "C-h o"
+  (junk-key '(
     "C-h t"
+    "C-h a"
+    "C-h n"
+    "C-h g"
+    "C-h o"
     "C-h w"
   ))
-  (global-unset-key (kbd junkkey)))
+  (global-unset-key (kbd junk-key)))
 
 ;;Refresh file
 (bind-key "<f5>" #'revert-buffer)
@@ -270,13 +271,6 @@ candidates, as follows:
 
 ;;Quick reference keymap
 (bind-key "C-h M" #'describe-keymap)
-
-;; not working :'(
-;; (defun grep-recursive-directory ()
-;;   (interactive); "D")
-;;   (grep-apply-setting 'grep-template "grep <X> <C> <R> -r .")
-;;   (call-interactively 'grep))
-;; (define-key dired-mode-map (kbd "C-c g") 'grep-recursive-directory)
 
 ;;Use ctrl+shift+c/v in x11 mode, like a terminal.
 (bind-key "C-S-C" #'kill-ring-save)
@@ -404,47 +398,60 @@ candidates, as follows:
 ;;=====================================================================
 ;;#Configuration
 
-;; Space key prints itself in minibuffer
+;; Space key inserts itself in minibuffer
 (define-key minibuffer-local-completion-map " " 'self-insert-command)
 (define-key minibuffer-local-must-match-map " " 'self-insert-command)
 
 ;;Use left alt as meta key
 (setq x-alt-keysym 'meta)
 
+(setq-default
+  delete-by-moving-to-trash t)
+
 ;;Clean startup
-(setq initial-scratch-message "")
-(setq inhibit-startup-screen t)
-(setq inhibit-startup-message t)
+(setq
+  initial-scratch-message ""
+  inhibit-startup-screen t
+  inhibit-startup-message t)
 
 ;;Clean writing
-(setq delete-trailing-lines nil)        ; delete-trailing-whitespace doesn't delete lines
-(setq-default indent-tabs-mode nil)     ; Use spaces instead of tabs
-(setq-default tab-width 4)              ; Use 4 spaces, not 8
-(setq next-line-add-newlines t)         ; Add newlines automatically when past buffer end
-(setq-default buffer-file-coding-system 'utf-8-unix) ; Correct line endings
-(setq sentence-end-double-space nil)
-(setq require-final-newline t)
-
-(prefer-coding-system       'utf-8)
-(set-default-coding-systems 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(set-keyboard-coding-system 'utf-8)
-(setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
+(setq
+  delete-trailing-lines nil        ; delete-trailing-whitespace doesn't delete lines
+  next-line-add-newlines t         ; Add newlines automatically when past buffer end
+  require-final-newline t
+  x-stretch-cursor t
+  truncate-string-elipsis t
+  sentence-end-double-space nil)
+(setq-default
+  buffer-file-coding-system 'utf-8-unix ; Correct line endings
+  indent-tabs-mode nil     ; Use spaces instead of tabs
+  tab-width 4)              ; Use 4 spaces, not 8
 
 ;;Enhancements
-(setq message-log-max 10000)            ; Increase message log capacity
-(setq undo-limit 10000)                 ; Increase undo history capacity
-(setq vc-follow-symlinks t)             ; don't refuse to open version controlled symlinks
-(setq diff-switches "-u")               ; default to unified diffs
-(setq-default indicate-empty-lines t)
-(setq-default indicate-buffer-boundaries 'left)
-(setq-default frame-title-format (list "%b @Emacs"))
-(setq ring-bell-function 'ignore)       ; neuter the bell
-(setq visible-bell t)
+(setq
+  message-log-max 10000            ; Increase message log capacity
+  undo-limit 10000                 ; Increase undo history capacity
+  vc-follow-symlinks t             ; don't refuse to open version controlled symlinks
+  diff-switches "-u"              ; default to unified diffs
+  ring-bell-function 'ignore       ; neuter the bell
+  visible-bell t
+  query-replace-highlight t    ;highlight during query
+  search-highlight t)           ;highlight incremental search
+
+; (add-hook 'term-mode-hook
+;   (lambda () (term-set-escape-char ?\C-x)))
+
+(defun term-use-sensible-escape-char (&rest ignored)
+  (term-set-escape-char 24))
+(advice-add 'term :after #'term-use-sensible-escape-char)
+
+(setq-default
+  indicate-empty-lines t
+  indicate-buffer-boundaries 'left
+  frame-title-format (list "%b"))
+
 (add-hook 'prog-mode-hook
   (lambda () (setq show-trailing-whitespace t))) ;Show stray whitespace.
-(setq query-replace-highlight t)    ;highlight during query
-(setq search-highlight t)           ;highlight incremental search
 ;;Show info in the mode line
 (line-number-mode 1)
 (column-number-mode 1)
@@ -452,22 +459,23 @@ candidates, as follows:
 ;; Write auto-saves and backups to separate directory.
 (make-directory "~/.tmp/emacs/auto-save/" t)
 (make-directory "~/.tmp/emacs/backup/" t)
-(setq auto-save-file-name-transforms '((".*" "~/.tmp/emacs/auto-save/" t)))
-(setq backup-directory-alist '(("." . "~/.tmp/emacs/backup/")))
+(setq
+  auto-save-file-name-transforms '((".*" "~/.tmp/emacs/auto-save/" t))
+  backup-directory-alist '(("." . "~/.tmp/emacs/backup/")))
 
-(setq savehist-file "~/.emacs.d/savehist")
-(savehist-mode +1)
-(setq savehist-save-minibuffer-history +1)
-(setq savehist-additional-variables
+(setq
+  savehist-file "~/.emacs.d/savehist"
+  savehist-save-minibuffer-history +1
+  savehist-additional-variables
       '(kill-ring
         search-ring
         regexp-search-ring))
+(savehist-mode +1)
 
-;; Do not move the current file while creating backup.
-(setq backup-by-copying t)
-
-;; Disable lockfiles.
-(setq create-lockfiles nil)
+(setq
+  backup-by-copying t ;Do not move the current file while creating backup.
+  delete-by-moving-to-trash t
+  create-lockfiles nil) ;Disable lockfiles.
 
 ;; Only show the menu bar in windowed mode
 (if (not (window-system))
@@ -476,12 +484,13 @@ candidates, as follows:
 
 ;; Language settings
 
-(setq sh-basic-offset 2)
+(setq
+  sh-basic-offset 2
+  python-shell-interpreter "python3")
+
 (add-hook 'shell-mode-hook (lambda ()
    (setq-local evil-shift-width 2)))
 (setq ess-fancy-comments nil)
-
-(setq python-shell-interpreter "python3")
 
 (add-hook 'term-mode-hook
   (lambda ()
@@ -570,22 +579,6 @@ candidates, as follows:
   (add-to-list 'Info-directory-list (expand-file-name "~/.local/share/info/"))
   (add-to-list 'Info-directory-list (expand-file-name "~/info/")))
 
-(with-eval-after-load 'image-dired
-(defun image-dired-format-properties-string (buf file props comment)
-  "Format display properties.
-BUF is the associated Dired buffer, FILE is the original image file
-name, PROPS is a stringified list of tags and COMMENT is the image file's
-comment."
-  (format-spec
-   image-dired-display-properties-format
-   (list
-    (cons ?b (or buf ""))
-    (cons ?f (replace-regexp-in-string "/\\([a-z]\\)/" "\\1:/" file nil nil))
-    (cons ?t (or props ""))
-    (cons ?c (or comment "")))))
-
-)
-
 ;;Tramp
 (require 'tramp)
 (setq
@@ -604,7 +597,7 @@ comment."
 ;; Enable fully editable wdired
 (customize-set-variable 'wdired-allow-to-change-permissions t)
 (eval-after-load "dired" '(progn
-  (bind-key "C-}" #'dired-hide-subdir 'dired-mode-map)
+  (bind-key "C-}" #'dired-maybe-insert-subdir 'dired-mode-map)
   (bind-key "C-{" #'dired-hide-subdir 'dired-mode-map)
   (bind-key "<tab>" #'dired-hide-subdir 'dired-mode-map)
   (bind-key "C-k" #'dired-kill-subdir 'dired-mode-map)

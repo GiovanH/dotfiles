@@ -65,11 +65,11 @@
         bind-key
         cl-generic company
         counsel
-        dash
+        dash dired-du dired-quick-sort
         elisp-refs epl evil evil-collection
         f fiplr flycheck
         git-modes goto-chg grizzl
-        hyperbole
+        hyperbole hydra
         ivy
         lv
         lsp-mode lsp-ui lsp-ivy ;; lsp-treemacs
@@ -77,11 +77,11 @@
         magit
         markdown-mode
         popup
-        s seq swiper
+        s seq swiper sunrise
         treemacs treemacs-evil treemacs-magit
         undo-fu use-package
-        with-editor
-        pydoc
+        with-editor which-key
+        pydoc projectile
         x509-mode
       ))
       (package-refresh-contents)
@@ -104,6 +104,94 @@
   :config (setq magit-diff-refine-hunk nil)
           (setq magit-repository-directories `((,(expand-file-name "~/gits/") . 1)))
   )
+
+;; (use-package window-purpose)
+
+;; Keyquiz
+
+(defun my-key-quiz ()
+  (interactive)
+  (require 'key-quiz)
+  (defun keypairs-from-binding (keystrs keymap)
+    (let ((pairs
+      (which-key--get-keymap-bindings keymap
+        (lambda (ev def)
+          (not (seq-contains-p
+                keystrs
+                (key-description (list ev))
+                #'string-equal)
+          )
+        )
+      )))
+      (unless (eq (length keystrs) (length pairs))
+        (which-key--get-keymap-bindings keymap
+          (lambda (ev def)
+            (dolist (keystr keystrs)
+              (let ((keydesc (key-description (list ev))))
+                (message "%s %s . %s =? %s %s"
+                  ev
+                  keydesc
+                  def
+                  keystr
+                  (string-equal keystr keydesc))))
+          )
+        )
+        (error "Could not resolve all: %s / %s " keystrs pairs))
+      pairs)
+  )
+  (key-quiz nil
+    (append
+      (mapcar
+        (lambda (key) (cons key (symbol-name (key-binding (kbd key)))))
+        '(
+           ;; "C-x C-f" "C-x C-s"
+           "C-x s"
+           "C-h M"
+           "M-g c" "M-g g"
+           "C-M-h"
+           "C-x TAB"
+           "C-x C-t"
+           "C-x C-u" "C-x C-l"
+           "M-|"
+           "M-:"
+           "M-m"
+           "M-u" "M-l" "M-c"
+           ;; User
+           "C-c o"
+           "C-c C-f"
+           "C-S-e"
+           "C-s" "C-c i"
+           "C-c C-e" "C-c C-r"
+           "C-:" "M-o"
+           "<f3>" "<f4>"
+         )
+      )
+      (keypairs-from-binding '(
+                                "C-l"
+                                ) global-map)
+      (keypairs-from-binding '("{" "}" "C-e" "C-y" "'" "M" "B" "W") evil-motion-state-map)
+      (keypairs-from-binding '(
+                                "O" "o" "R"
+                                "J"
+                                "m"
+                                "\"") evil-normal-state-map)
+      (keypairs-from-binding '("C-v" "C-a" "C-d" "C-t" "C-k") evil-insert-state-map)
+      (keypairs-from-binding '("(" "C-}") dired-mode-map)
+;;       (read
+;;         (concat "("
+;;           (shell-command-to-string
+;;             "cd ~/.emacs.d; source ~/.bash_personal; frem '/[-(]set-key +(.+) (.+?)[ \\)]
+;; /g' '($1 . \"$2\")' init.el init-extra.el")
+;;           ")"))
+;;       (read
+;;         (concat "("
+;;           (shell-command-to-string
+;;             "cd ~/.emacs.d; source ~/.bash_personal; frem '/\\(bind-key +\"(.+?)\" #?.(.+?)[ \\)]
+;; /g' '(\"$1\" . \"$2\")' init.el init-extra.el")
+;;           ")"))
+    )
+  )
+)
 
 ;;# Flycheck
 (use-package flycheck
@@ -151,26 +239,6 @@
 ;;=====================================================================
 ;;# Integration
 
-(use-package lsp-mode
-  :init
-  ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
-  (setq lsp-keymap-prefix "C-c l")
-  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
-         ;; (XXX-mode . lsp)
-         ;; if you want which-key integration
-         (lsp-mode . lsp-enable-which-key-integration))
-  :commands lsp)
-
-;; optionally
-(use-package lsp-ui :commands lsp-ui-mode)
-;; if you are ivy user
-(use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
-;; (use-package lsp-treemacs :commands lsp-treemacs-errors-list)
-
-;; optionally if you want to use debugger
-;; (use-package dap-mode)
-;; (use-package dap-LANGUAGE) to load the dap adapter for your language
-
 (use-package py-autopep8
   ;; :hook python-mode
   :commands py-autopep8
@@ -207,6 +275,9 @@
 
 ;;=====================================================================
 ;;# Tweaks & Features
+
+;; string-inflection
+(use-package string-inflection)
 
 ;; ace-window
 (use-package ace-window
@@ -292,7 +363,9 @@
 
 
 ;; Ivy/counsel/swiper
-(add-to-list 'load-path "~/.emacs.d/swiper-0.13.0/")
+(add-to-list 'load-path
+  (car (file-expand-wildcards "~/.emacs.d/elpa/swiper-*/")))
+
 (use-package ivy
   :bind (("C-c C-r" . ivy-resume)
          ("<f6>" . ivy-resume))
@@ -310,10 +383,16 @@
   :commands swiper
   :bind (("C-s" . swiper)))
 
-(require 'which-key)
-;;(which-key-setup-minibuffer)
-(setq which-key-show-early-on-C-h t)
-(which-key-mode t)
+(use-package which-key
+  :config
+  (which-key-mode 1)
+  (setq which-key-show-early-on-C-h t)
+    (add-to-list
+    'which-key-replacement-alist
+    '(("" . "\\`+?evil[-:]?\\(?:a-\\)?\\(.*\\)") . (nil . "◂\\1"))
+    '(("\\`g s" . "\\`evilem--?motion-\\(.*\\)") . (nil . "◃\\1"))
+    )
+  )
 
 ;; Golden ratio
 (autoload 'golden-ratio "golden-ratio" "Golden ratio" t)
@@ -321,7 +400,7 @@
 (global-set-key (kbd "C-x g") 'golden-ratio)
 
 (use-package crux
-  :bind (("C-c e" . crux-eval-and-replace)
+  :bind (("C-c C-e" . crux-eval-and-replace)
          ;("C-c o" . crux-open-with)
          ("C-c C-r" . crux-rename-file-and-buffer)
          ("C-x 4 t" . crux-transpose-windows)))
@@ -385,9 +464,6 @@
 ))
   (setq-local imenu-generic-expression imenu-generic-expression-markdown)))
 
-(autoload 'hcl-mode "hcl-mode" "hcl-mode; local major mode for hcl files" t)
-(add-to-list 'auto-mode-alist '("\\.hcl\\'" . hcl-mode))
-
 ;;(require 'dockerfile-mode)
 ;;(add-to-list 'auto-mode-alist '("Dockerfile" . dockerfile-mode))
 (use-package dockerfile-mode
@@ -448,6 +524,28 @@
   )
 
 (add-hook 'yaml-mode-hook 'outline-hook-yaml)
+
+;;TODO Artist mode QoL
+(add-hook 'artist-mode-hook
+  (lambda ()
+    (transient-define-prefix artist-tools ()
+      ;; :transient-suffix     'transient--do-stay
+      ;; :transient-non-suffix 'transient--do-warn
+      [("p" "pen tool"     artist-select-op-pen-line)
+       ("l" "line tool"    artist-select-op-line)
+       ("s" "square tool"  artist-select-op-square)
+       ("e" "ellipse tool" artist-select-op-ellipse)
+      ]
+    )
+    (local-set-key (kbd "<f1>") #'artist-tools)
+    ;; (local-set-key (kbd "<f2>") 'artist-select-op-pen-line) ; f2 = pen mode
+    ;; (local-set-key (kbd "<f3>") 'artist-select-op-line)     ; f3 = line
+    ;; (local-set-key (kbd "<f4>") 'artist-select-op-square)   ; f4 = rectangle
+    ;; (local-set-key (kbd "<f5>") 'artist-select-op-ellipse)  ; f5 = ellipse
+    (local-set-key (kbd "C-z") 'undo)
+  ))
+
+
 
 (setq tetris-score-file "~/.emacs.d/tetris-scores")
 (autoload 'tetris "tetris2" "tetris major mode" t)

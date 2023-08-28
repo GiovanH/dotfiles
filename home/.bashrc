@@ -22,10 +22,25 @@ pathmunge () {
 
 # Unix settings
 
+getex () {
+  # Find the first real executable in a list, prioritizing system builtins.
+  for q in $@; do
+    for p in '/usr/bin/' '/bin/' ''; do
+      which "$p$q" &>/dev/null && echo "$p$q" && return
+    done
+  done
+}
+
+copy_function () {
+  local ORIG_FUNC=$(declare -f $1)
+  local NEWNAME_FUNC="$2${ORIG_FUNC#$1}"
+  eval "$NEWNAME_FUNC"
+}
+
 export LESS="--chop-long-lines --RAW-CONTROL-CHARS" # see LESS(1)
 
-export VISUAL="vim"
-export EDITOR="vim"
+export VISUAL=$(getex vim vi nano)
+export EDITOR=$VISUAL
 
 # Use standard blues
 export LS_COLORS=$(echo $LS_COLORS | sed 's/=38;5;27:/=34;27:/')
@@ -64,9 +79,15 @@ sourceif () { [[ -f "$1" ]] && . "$1"; } # || echo "missing file $1"; }
 sourceif ${HOME}/.bash_colors
 sourceif ${HOME}/.bash_personal
 
-export HOSTNAME_NICE="$(hostname -f 2>/dev/null || hostname 2>/dev/null || cat /etc/hostname)"
-sourceif ~/.bashrc_$(uname -o)
-sourceif ~/.bashrc_${HOSTNAME_NICE}
+export HOSTNAME_NICE="$($(getex hostname) -f 2>/dev/null || $(getex hostname) 2>/dev/null || cat /etc/hostname)"
+export DOMAIN=$(hostname -f | cut -d . -f 2-)
+# export TLD=$(hostname -f | rev | cut -d . -f 1-2 | rev)
+export TLD=$(hostname -f | rev | cut -d . -f 1 | rev)
+
+sourceif ~/dotfiles/local/.bashrc_$(uname -o)
+sourceif ~/dotfiles/local/.bashrc_${TLD}
+sourceif ~/dotfiles/local/.bashrc_${DOMAIN}
+sourceif ~/dotfiles/local/.bashrc_${HOSTNAME_NICE}
 sourceif ~/.bashrc_local
 
 # Programmable completion enhancements
@@ -105,11 +126,4 @@ shopt -s cdspell
 
 # stop killing evw
 shopt -s checkjobs
-
-export HOSTNAME_NICE="$(hostname -f 2>/dev/null || hostname 2>/dev/null || cat /etc/hostname)"
-HOST_FAMILY="UNK"
-
-sourceif "${HOME}/.profile_$(uname -o)"
-sourceif "${HOME}/.profile_${HOSTNAME_NICE}"
-sourceif "${HOME}/.profile_local"
 

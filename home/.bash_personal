@@ -1,8 +1,29 @@
 #!/bin/bash
 
-source ~/dotfiles/support/gum_polyfill.sh &
+source ~/dotfiles/support/gum_polyfill.sh
 
 # Common functions
+
+# Overwritten function - clean up space
+clean () {
+  shopt -s globstar
+
+  function _clean_files_in_dir {
+    gum spin --title "Cleaning $1" --show-output -- du -sh "$1" | cat
+    gum spin --title "Cleaning $1" --show-output -- rm -rv "$1"/* | cat
+  }
+
+  function _clean_subdirs_in_dir {
+    gum spin --title "Cleaning $1" --show-output -- du -sh "$1" | cat
+    gum spin --title "Cleaning $1" --show-output -- rm -rv "$1"/*/ | cat
+  }
+
+  function _clean_paths {
+    gum spin --title "Cleaning $1" --show-output -- du -sh "$@" | cat
+    gum spin --title "Cleaning $1" --show-output -- rm -rv "$@" | cat
+  }
+}
+
 
 alias tsv="column -t -s $'\t'" # Pretty-print tsv data
 alias csv="column -t -s ," # Pretty-print csv data
@@ -11,7 +32,7 @@ alias rrsync="rsync -hir --executability --times" # rsync with defaults
 
 alias killall="killall -u $USER" # multiuser-safe killall
 
-# [{a: b}, {a: c}] -> A | B | C
+# [{a: b}, {a: c}] -> "A, B, C"
 alias jqcsv="jq -r '
   (map(keys) | add | unique) as \$cols
   | map(. as \$row | \$cols | map(\$row[.])) as \$rows
@@ -23,13 +44,30 @@ alias psed="perl -p -e"
 # perl printwhile program inplace, equivalent to sed -i
 alias psedi="perl -pi -e"
 
+frem() {
+  if [ -z "$3" ]; then
+    echo -e "frem: Format RegEx Matches. Like grep, but with match formatting\n"
+    echo " Usage: frem PATTERN                  FORMAT           FILES [FILES...]"
+    echo "   e.g. frem '/(.+)=(.+)/'            '\$1: \$2'         gradle.properties"
+    echo "        frem '/(?<k>.+)=(?<v>.+)/'    '\$+{k}: \$+{v}'   gradle.properties"
+    echo "        frem '/(\d+) (?:.+? )*(.+)/g' 'proc=\$2 pid=\$1' <(ps)"
+    return
+  fi
+  pattern=$1
+  reply=$(echo $2 | sed 's/"/\\"/g')
+  shift 2
+  files=$@
+  cmd="print \"$reply\n\" if $pattern"
+  perl -n -e "$cmd" "$@"
+}
+
 # used for password generation, various
 export WORDLIST="/usr/share/dict/words"
 
 splitpath() {
   filepath="$1" # "./relative folder/file name.j2.ext"
-  # eg filepath = "${dirname}/${filestem}.${extension}"
-  # eg filepath = "${dirname}/${filename}"
+  rem filepath = "${dirname}/${filestem}.${extension}"
+  rem filepath = "${dirname}/${filename}"
   export dirname=$(dirname "$filepath") # "./relative folder"
   export filename=$(basename -- "$filepath") # "file name.j2.ext"
   export extension="${filename##*.}" # "ext"
@@ -48,7 +86,7 @@ colorerr() {
   "$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2)
 }
 
-[[ -d "$(which bfs 2>/dev/null)" ]] && alias find="bfs"
+alias find="$(getex bfs find)"
 
 # Fast find file by partial name
 ff() { find . -iname "*${@}*"; }
@@ -101,29 +139,26 @@ dmap() {( # set -e  # fail early
 )}
 
 pip_update() {
-  choice_table=$(gum spin --title "Loading outdated packages" --show-output -- pip list --outdated)
-  choices=$(gum choose --no-limit -- $(echo "$choice_table" | tail -n +3 | cut -d' ' -f 1))
-  gum confirm "$choices\nUpdate?" && python3 -m pip install -U $choices
+  choice_table=$(
+    gum spin --title "Loading outdated packages" --show-output -- \
+      pip list --outdated
+  )
+  choices=$(
+    gum choose --no-limit -- $(\
+      echo "$choice_table" | tail -n +3 | cut -d' ' -f 1
+  ))
+  gum confirm "$choices" && \
+    python3 -m pip install -U $choices
+}
+
+find_sparse_directories() {
+  # List directories with N or fewer files in them
+  maxfiles=${1:-'8'}
+  find */ -type d -exec sh -c 'set -- "$0"/*.*; [ $# -le '$maxfiles' ]' {} \; -print
 }
 
 # Unified diff piped into vim for colouring.
 vdiff() { diff --unified $@ | vim -R - ; }
-
-perlmatch() {
-  pattern=$1
-  format=$2
-  file=$3
-  if [ -z "$3" ]; then
-    echo "perlmatch: match and format patterns with perl, like grep"
-    echo ""
-    echo " Usage: perlmatch [pattern|expression] [format] [file]"
-    echo "   e.g. perlmatch '/(.+)=(.+)/' '\$1: \$2' ~/.gradle/gradle.properties"
-    echo "     or perlmatch '/(?<key>.+)=(?<value>.+)/' '$+{key}: $+{value}' ~/.gradle/gradle.properties"
-    echo ""
-    return
-  fi
-  cat $file | perl -n -e "print \"$format\n\" if $pattern"
-}
 
 # Git magic
 
@@ -142,8 +177,96 @@ git_clone_or_update() {
   autodest=${autodest%.git} # %  delete shortest match of pattern from end
   gitdest=${2:-$autodest}
   git clone $repo $gitdest \
-    || (pushd $gitdest && git pull && popd)
+    || (cd $gitdest && git pull)
   return 0
+}
+
+gitmerge() {
+  if [ -z "$1" -o -z "$2" -o -z "$3" ]; then
+    echo "gitmerge: do a git merge"
+    echo ""
+    echo "     Usage: gitmerge [target] [source] [interim] {merge options}"
+    echo "       e.g. gitmerge 'release/1.1' 'hotfix/1.0/JIRA-1-slug' 'hotfix/1.1/JIRA-1-slug-merged'"
+    echo " GM_ORIGIN= gitmerge 'origin/release/1.1' 'abad4ef' 'hotfix/1.1/JIRA-1-slug-merged' -Xours"
+    echo ""
+    return
+  fi
+
+  target=$1
+  source=$2
+  interm=$3
+
+  # Set GM_FORCE to a value to bypass
+  if [[ $source == *"release/"* || $source == "develop" ]]; then
+    echo "Source should not be develop or release; Atlassian is wrong."
+    test $GM_FORCE || return 1
+  fi
+
+  (set -e -v
+      echo -e "${COLOR_BOLD}Fetching updated tracking information${COLOR_NC}"
+      git fetch --all --tags --progress
+
+      # Power tool: Execute with GM_ORIGIN set to a blank string to disable origin prepending
+      # and enable things like merging in hashes
+      GM_ORIGIN=${GM_ORIGIN-'origin/'}
+      echo -e "${COLOR_BOLD}Checking out target '${GM_ORIGIN}${target}' in detached mode${COLOR_NC}"
+      git checkout ${GM_ORIGIN}${target}
+
+      echo -e "${COLOR_BOLD}Making fresh branch '${interm}'${COLOR_NC}"
+      # OK for this to "fail"; just means the branch doesn't exist so it can't be deleted.
+      git branch -d ${interm} || :
+      git checkout -b ${interm}
+
+      echo -e "${COLOR_BOLD}Kicking off no-commit merge to '${GM_ORIGIN}${source}' with options '$4'${COLOR_NC}"
+      # OK for this to "fail"; just means manual resolution is necessary. Don't abort.
+      git merge ${GM_ORIGIN}${source} -s recursive --no-commit --stat $4 || :
+
+      echo -e "${COLOR_BOLD}Done.${COLOR_NC}"
+      git diff ${GM_ORIGIN}${source} --stat
+      git status
+  )
+}
+
+cherry_pick_jira() {
+  if [ -z "$1" -o -z "$2" ]; then
+    echo "cherry_pick_jira: cherry-pick all the commits for a specific jira ID since a given ref"
+    echo ""
+    echo "Usage:  cherry_pick_jira [JIRAID] [sinceref] {cherry-pick options}"
+    echo "  e.g.  cherry_pick_jira 'JIRA-1' 'release/1.0'"
+    echo "        cherry_pick_jira 'JIRA-1' 'HEAD~20' '--no-commit'"
+    echo "REFFMT= cherry_pick_jira 'JIRA-1' '..develop' # backport"
+    echo ""
+    return
+  fi
+
+  jiraid=$1
+  sinceref=$2
+  cp_opts=$3
+
+  REFFMT=${REFFMT-'..'}
+
+  (set -e
+    echo -e "${COLOR_BOLD}Fetching all refs${COLOR_NC}"
+    git fetch --all --tags --progress
+    git-show-ref --heads
+
+    echo -e "${COLOR_BOLD}Writing todo list${COLOR_NC}"
+    # Rebase settings: commits since release head matching our jira ID in reverse order, no merges.
+    logopts="--grep=^${jiraid} --reverse --no-merges ${sinceref}${REFFMT} "
+    echo git log ${logopts}
+    todo_list=$(git log --pretty=%H ${logopts}) # Todo list as a list of hashes
+    # Pretty-print todo list for user
+    git log --abbrev-commit --decorate ${logopts} \
+      --format=format:'%C(yellow)%h%C(reset) - %C(dim green)%<(12,trunc)(%ci)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)' ${logopts}
+
+    [ -z "$todo_list" ] && echo "${COLOR_BOLD}Empty todo list!${COLOR_NC} Aborting" && return 1
+    echo -e "${COLOR_BOLD}Cherry-picking commits${COLOR_NC}"
+    git cherry-pick ${todo_list} --strategy=recursive -X theirs $cp_opts
+
+    echo -e "${COLOR_BOLD}Cherry-pick done.${COLOR_NC}"
+    git diff ${sinceref} --stat
+    git status
+  )
 }
 
 ddimage () {( set -e
@@ -165,33 +288,6 @@ ddimage () {( set -e
   fi
   dd if=$device bs=64K status=progress | gzip -c > "$outfile"
 )}
-
-pdiff() {
-  # Diff pcloud "conflicted" files
-  # TODO use splitext
-  orig="$1"
-  last="$orig"
-  find -iwholename "*$orig* [conflicted*" | while read file; do
-    echo "=============="
-    echo "$last -> $file"
-    diff "$last" "$file"
-    last="$file"
-  done
-}
-
-# Run ffmpeg at a calculated bitrate to make 8mb mp4s.
-function discordmp4 {
-  if [ -z "$1" ]; then
-    echo "Usage: discordmp4 <filepath> [target size in mb (default 8)]"
-    return
-  fi
-  mb=${2:-8} # default to 8 mb
-  secs=$(ffprobe.exe -i "$1" -show_entries format=duration -of 'csv=p=0' 2>/dev/null)
-  akbs=$(echo "($mb*2500)/$secs" | bc)
-  vkbs=$(echo "($mb*6500)/$secs" | bc)
-  echo "Audio: ${akbs}k, Video: ${vkbs}k"
-  ffmpeg -i "$1" -b:v ${vkbs}k -b:a ${akbs}k "$1_${mb}mb.mp4"
-}
 
 delete_empty_dirs() {
   find . -not -path '*/.*' -type d -empty -exec echo "rmdir '{}'" \; -delete;
@@ -244,10 +340,15 @@ react() {
 }
 export -f react
 
-
 # Emacs stuff
-alias emacsw=$(echo $(/bin/which emacs-w32 2>/dev/null) $(/bin/which emacs 2>/dev/null) | cut -d " " -f1) # Windowed
+alias emacsw=$(getex emacs-w32 emacs) # Windowed
 alias emacs="emacs -nw --no-splash" # Terminal
+
+alias emacs_repair="rm -v ~/.emacs.d/**/*.elc; emacs --debug-init --eval '(progn
+  (load-file \"~/.emacs.d/init-extra.el\")
+  (my-package-update)
+  (byte-recompile-directory (expand-file-name \"~/.emacs.d\") 0)
+)'"
 
 # Use emacs to copy the contents of a file into the X clipboard
 copyf() {
@@ -363,6 +464,36 @@ ediff() {
       (add-hook 'ediff-after-quit-hook-internal 'save-buffers-kill-emacs)
       (ediff-files \"$1\" \"$2\")
   )";
+}
+
+# Modern personal
+
+
+pdiff() {
+  # Diff pcloud "conflicted" files
+  # TODO use splitext
+  orig="$1"
+  last="$orig"
+  find -iwholename "*$orig* [conflicted*" | while read file; do
+    echo "=============="
+    echo "$last -> $file"
+    diff "$last" "$file"
+    last="$file"
+  done
+}
+
+# Run ffmpeg at a calculated bitrate to make 8mb mp4s.
+function discordmp4 {
+  if [ -z "$1" ]; then
+    echo "Usage: discordmp4 <filepath> [target size in mb (default 8)]"
+    return
+  fi
+  mb=${2:-8} # default to 8 mb
+  secs=$(ffprobe.exe -i "$1" -show_entries format=duration -of 'csv=p=0' 2>/dev/null)
+  akbs=$(echo "($mb*2500)/$secs" | bc)
+  vkbs=$(echo "($mb*6500)/$secs" | bc)
+  echo "Audio: ${akbs}k, Video: ${vkbs}k"
+  ffmpeg -i "$1" -b:v ${vkbs}k -b:a ${akbs}k "$1_${mb}mb.mp4"
 }
 
 # Misc

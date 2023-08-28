@@ -1,4 +1,4 @@
-(if (not (fboundp 'evil)) (progn
+(if (not (and (boundp 'my-evil-loaded) (fboundp 'evil-mode))) (progn
 
 (message "evil grows in the dark")
 
@@ -43,6 +43,7 @@
   (setq evil-collection-want-unimpaired-p nil)
   (setq global-evil-collection-unimpaired-mode nil)
   (setq evil-undo-system 'undo-fu)
+  ;; (setq evil-ex-substitute-global t)
   :config
   (evil-mode 1)
   (evil-define-key 'normal 'global
@@ -129,6 +130,21 @@
 
 (define-key evil-visual-state-map (kbd "<backtab>") 'evil-shift-left)
 
+(use-package dired-quick-sort
+  :config
+  (evil-define-key 'normal 'dired-mode-map
+    "s" 'hydra-dired-quick-sort/body)
+  )
+
+
+;; (evil-define-operator evil-operator-string-inflection (beg end _type)
+;;       "Define a new evil operator that cycles symbol casing."
+;;       :move-point nil
+;;       (interactive "<R>")
+;;       (string-inflection-all-cycle)
+;;       (setq evil-repeat-info '([?g ?~])))
+;; (define-key evil-normal-state-map (kbd "g~") 'evil-operator-string-inflection)
+
 (defun evil-quick-replace-selection (start end)
   "Quickly open a command to globally replace the current region with a new value"
   (interactive "r") ; operate on region
@@ -165,9 +181,17 @@
           ))
   (add-to-list 'evil-emacs-state-modes mode))
 
-(add-hook 'speedbar-mode-hook (
-    lambda ()
-    (evil-emacs-state)
-))
+(add-hook 'speedbar-mode-hook
+  (lambda ()
+    (evil-emacs-state)))
 
+(add-hook 'artist-mode-init-hook
+  (lambda ()
+    (evil-emacs-state)))
+
+(setq evil-shift-width 2)
+(add-hook 'python-mode-hook (lambda ()
+   (setq-local evil-shift-width 4)))
+
+(setq my-evil-loaded t)
 ))
