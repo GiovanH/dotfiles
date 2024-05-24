@@ -4,6 +4,8 @@
 	excludesfile = ~/.gitignore
 	hooksPath = ~/.githooks
 	sshCommand = ssh -i ~/.ssh/id_rsa
+[color]
+	ui = true
 [ssh]
 	key = ~/.ssh/id_rsa
 [log]
@@ -15,8 +17,8 @@
 	conflictstyle = diff3
 [fetch]
 	prune = true
-[color]
-	ui = true
+[pull]
+	rebase = true
 [filter "lfs"]
 	required = true
 	clean = git-lfs clean -- %f

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+alias where='type -a'
+
+copy_function clean super_clean
+clean() {
+  super_clean
+
+  _clean_files_in_dir ~/.cache
+  _clean_files_in_dir ~/.tmp
+
+  if [[ "$(groups | grep docker)" ]]; then
+    docker system prune -f
+  fi
+  if [[ "$(groups | grep sudo)" ]]; then
+    sudo journalctl --vacuum-size=100M
+  fi
+
+  df -h
+}
+

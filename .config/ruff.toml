@@ -1,0 +1,56 @@
+[lint]
+# pyflakes, whitespace, bugbear, complexity
+extend-select = [
+  "F", # pyflakes
+  "E", # pycodestyle errors
+  "E1", # Matching indent
+  "E225", # Whitespace around operator
+  # "E305", # Newlines between functions
+  "W", # pycodestyle warnings
+  "W2", # pycodestyle whitespace warnings
+  "C", # complexity
+  # "D", # docs
+  "N", # naming
+  "YTT", # flake8
+  "ASYNC",
+  "S", # flake8 bandit
+  "BLE", # blind except
+  "FBT", # boolean trap
+  "A", # builtins
+  "COM", # commas
+  "PL", # pylint
+  "PLC",
+  "PLE",
+  "PLW",
+  "C4", # comprehensions
+  "EM", # errormsg
+  "G010", # warn/warning
+  "PIE",
+  "RET",
+  # "TD", # TODO
+  # "FIX", # FIXME
+  # "ERA", # eradicate commented code
+  "B", # bugbears
+  "ARG",
+  "RUF",
+]
+
+ignore = [
+  "E501", # line too long
+  "EM101", # Strings in exceptions
+  "W293", # blank line contains whitespace
+  # "W291", # trailing whitespace
+  "N802", # camelCase function names
+  "EM101", # strings in exceptions print twice
+  "EM102", # f-strings in exceptions print twice
+  "COM812", # require trailing comma
+  "FBT002", # boolean defaults
+  # "ERA101", # commented code
+  "S311", # secure randomness
+]
+
+# convention = null
+
+[format]
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"

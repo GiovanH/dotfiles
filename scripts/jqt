@@ -17,4 +17,4 @@ EOF
 
 # echo $QUERY
 
-jq -r "$QUERY"#  | column -t -s $'\t'
+jq -r "$QUERY" #  | column -t -s $'\t'

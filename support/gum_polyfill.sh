@@ -6,11 +6,9 @@ which gum &> /dev/null && return
 gum() {
   cmd=$1
   shift
-  args=$(printf '%q\n' "$@")
-  # echo "$args"
-  pre=$(echo "$args" | grep -Po ".+?(?= --)")
-  post=$(echo "$args" | grep -Po "(?<=-- ).+")
-
+  args=$(printf '%q ' "$@")
+  pre=$(echo "$args" | grep -Po ".+?(?= -- )")
+  post=$(echo "$args" | grep -Po "(?<= -- ).+")
   args_array=("$@")
   for sep_index in "${!args_array[@]}"; do
     [[ "${args_array[$sep_index]}" == "--" ]] && break;
@@ -19,21 +17,25 @@ gum() {
 
   case $cmd in
     spin)
-      echo $pre
+      title=$(echo "$args" | grep -Po '(?<=--title ).+(?= --)|$' || echo "Running $post")
+      echo $title >&2
       $post
       return $?
       ;;
     confirm)
-      echo $pre
-      echo Ctrl+C to cancel, otherwise continue
-      read -n 1
+      echo $@
+      echo Press any key to continue or Ctrl+C to cancel
+      read -n 1 </dev/tty
       return $?
       ;;
     choose)
-      echo "pre $pre"
+      echo "$pre"
       select c in "${args_array[@]:$((sep_index+1))}"; do
-       echo $c
-       return $?
+        if [[ -n "$c" ]]; then
+          echo $c
+          return $?
+          break;
+        fi
       done
       ;;
     *)

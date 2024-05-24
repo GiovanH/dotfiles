@@ -11,3 +11,4 @@ complete -a unalias # unalias completes with aliases
 complete -c command type which # type and which complete on commands
 complete -b builtin # builtin completes on builtins
 
+# END PUBLIC FILE
