@@ -36,6 +36,8 @@ alias psed="perl -p -e"
 # perl printwhile program inplace, equivalent to sed -i
 alias psedi="perl -pi -e"
 
+alias uniqs='perl -ne '\''print unless $seen{$_}++'\'''
+
 # used for password generation, various
 export WORDLIST="/usr/share/dict/words"
 

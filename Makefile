@@ -4,20 +4,26 @@ dotfiles = ~/dotfiles
 footer = END PUBLIC FILE
 privtag = PRIV
 allfiles = \
-	$(addprefix home/,.bash_personal .bash_colors .bash_completion .bash_profile .bashrc .gitconfig \
+	$(addprefix home/,.bash_personal .bash_profile .bashrc .gitconfig \
 	            .gitignore .vimrc .fonts.conf .minttyrc .XCompose .tmux.conf) \
-	$(addprefix local/,.bashrc_Cygwin) \
+	$(addprefix local/,.bashrc_Cygwin .bashrc_GNU_Linux) \
 	$(addprefix reg/,bog.runasinvoker.reg gio.makebak.reg gio.toggledisabled.reg) \
-	$(addprefix scripts/,jqt shlex j2) \
-	$(addprefix support/,gum_polyfill.sh) \
-	$(addprefix .emacs.d/,init.el init-extra.el ev-init.el) \
-	.githooks/prepare-commit-msg
+	$(addprefix scripts/,jqt shlex j2 servicewatch.sh) \
+	$(addprefix support/,gum_polyfill.sh .bash_colors .bash_completion logging.sh hyperloop.sh certutils.sh) \
+	$(addprefix .emacs.d/,init.el init-extra.el) \
+	$(addprefix .config/,ruff.toml)
+
+# .githooks/prepare-commit-msg
 
 .PHONY: all
 all: allfiles
 
 .PHONY: allfiles
 allfiles: $(allfiles) Makefile
+
+.SECONDEXPANSION:
+
+.SUFFIXES:
 
 .PHONY: check
 check:
@@ -39,7 +45,23 @@ define copy_cmd
 	cp $< $@
 endef
 
+home/.%: ICOM = \#
+home/.% :: $(dotfiles)/home/.%
+	$(call compile_cmd,ICOM)
+
+% :: $(dotfiles)/$$@
+	$(call copy_cmd)
+
 home/.vimrc :: $(dotfiles)/home/.vimrc
+	$(call copy_cmd)
+
+home/.minttyrc :: $(dotfiles)/home/.minttyrc
+	$(call copy_cmd)
+
+home/.XCompose :: $(dotfiles)/home/.XCompose
+	$(call copy_cmd)
+
+home/%.conf :: $(dotfiles)/home/%.conf
 	$(call copy_cmd)
 
 reg/%.reg :: $(dotfiles)/reg/%.reg
@@ -54,13 +76,6 @@ reg/%.reg :: $(dotfiles)/reg/%.reg
 	$(call compile_cmd,ICOM)
 
 .emacs.d/%.patch :: $(dotfiles)/.emacs.d/%.patch
-	$(call copy_cmd)
-
-home/.%: ICOM = \#
-home/.% :: $(dotfiles)/home/.%
-	$(call compile_cmd,ICOM)
-
-home/%.conf :: $(dotfiles)/home/%.conf
 	$(call copy_cmd)
 
 local/%: ICOM = \#
@@ -86,9 +101,11 @@ support/% :: $(dotfiles)/support/%
 .chef/knife.rb :: ~/.chef/knife.rb
 	$(call copy_cmd)
 
+compareroots = config home reg scripts local service support .config
 tell_me_what_all_cool_stuff_isnt_in_the_makefile_yet:
-	bash -c 'diff <(find scripts local home | sort -u) <(cd ../dotfiles/; find scripts local home | sort -u)'
+	mkdir -p $(compareroots)
+	bash -c 'diff <(find $(compareroots) | sort -u) <(cd ../; find $(compareroots) | sort -u)'
 
 .PHONY: clean
 clean:
-	-rm -r $(allfiles) out.html
+	-rm -r $(allfiles)

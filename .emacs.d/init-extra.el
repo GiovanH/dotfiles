@@ -1,8 +1,16 @@
 ;; Emacs configuration for optional packages not installed by default.
-;; This requires you to install files manually, or run ./setmeup.sh first
 
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
+;; (if (fboundp 'advice-add) (progn
+;;   (defun my-advice-silence-messages (func &rest args)
+;;   "Invoke FUNC with ARGS, silencing all messages. This is an `:around' advice for many different functions."
+;;   (cl-letf (((symbol-function #'msg) #'ignore)
+;;             ((symbol-function #'message) #'ignore))
+;;       (apply func args)))
+;;   (dolist (func '(define-minor-mode do-after-load-evaluation))
+;;   (advice-add func :around #'my-advice-silence-messages))
+;; ))
 (message "never go becret")
 
 ;;=====================================================================
@@ -59,7 +67,8 @@
        )
       ;(add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/") t)
       (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-      (add-to-list 'package-archives '("jcs-elpa" . "https://jcs-emacs.github.io/jcs-elpa/packages/") t)
+    ;; (add-to-list 'package-archives '("jcs-elpa" . "https://jcs-emacs.github.io/jcs-elpa/packages/") t)
+
       (setq package-selected-packages '(
         annalist ansi
         bind-key
@@ -71,18 +80,22 @@
         git-modes goto-chg grizzl
         hyperbole hydra
         ivy
+        json-mode json-navigator
         lv
         lsp-mode lsp-ui lsp-ivy ;; lsp-treemacs
         ;; dap-mode
         magit
         markdown-mode
+		;; org-lazy-babel
         popup
         s seq swiper sunrise
         treemacs treemacs-evil treemacs-magit
+        transient
         undo-fu use-package
         with-editor which-key
         pydoc projectile
         x509-mode
+        zenburn-theme
       ))
       (package-refresh-contents)
       (package-install-selected-packages)))
@@ -103,92 +116,110 @@
   :commands (magit magit-list-repositories)
   :config (setq magit-diff-refine-hunk nil)
           (setq magit-repository-directories `((,(expand-file-name "~/gits/") . 1)))
+          (setq magit-revert-buffers 1)
+          (setq magit-diff-refine-hunk nil)
+
   )
 
 ;; (use-package window-purpose)
 
 ;; Keyquiz
 
+;; TODO: evil-normal-state evil-open-fold, evil-close-fold
+
 (defun my-key-quiz ()
+  "Personal key quiz."
   (interactive)
   (require 'key-quiz)
-  (defun keypairs-from-binding (keystrs keymap)
-    (let ((pairs
-      (which-key--get-keymap-bindings keymap
-        (lambda (ev def)
-          (not (seq-contains-p
-                keystrs
-                (key-description (list ev))
-                #'string-equal)
-          )
-        )
-      )))
-      (unless (eq (length keystrs) (length pairs))
-        (which-key--get-keymap-bindings keymap
-          (lambda (ev def)
-            (dolist (keystr keystrs)
-              (let ((keydesc (key-description (list ev))))
-                (message "%s %s . %s =? %s %s"
-                  ev
-                  keydesc
-                  def
-                  keystr
-                  (string-equal keystr keydesc))))
-          )
-        )
-        (error "Could not resolve all: %s / %s " keystrs pairs))
-      pairs)
-  )
+
+  (defun keypairs-from-functions (fns keymap)
+    (defun flatten (list-of-lists)
+      (apply #'append list-of-lists))
+
+    (flatten (mapcar
+      (lambda (fn)
+        (let ((pairs
+          (mapcar
+            (lambda (key) (cons key (symbol-name fn)))
+            (mapcar #'key-description (where-is-internal fn keymap)))
+          ))
+          (unless (>= (length pairs) 1)
+            (error "Could not resolve all: %s %s %s " fn pairs (length pairs)))
+          pairs))
+      fns)))
   (key-quiz nil
+    ;; Construct (key . command) list
     (append
-      (mapcar
-        (lambda (key) (cons key (symbol-name (key-binding (kbd key)))))
+      (keypairs-from-functions
         '(
-           ;; "C-x C-f" "C-x C-s"
-           "C-x s"
-           "C-h M"
-           "M-g c" "M-g g"
-           "C-M-h"
-           "C-x TAB"
-           "C-x C-t"
-           "C-x C-u" "C-x C-l"
-           "M-|"
-           "M-:"
-           "M-m"
-           "M-u" "M-l" "M-c"
+           find-file
+           save-buffer
+           save-some-buffers
+           describe-keymap
+           goto-char
+           goto-line
+           mark-defun
+           indent-rigidly
+           transpose-lines
+           upcase-region
+           downcase-region
+           shell-command-on-region
+           back-to-indentation
+           eval-expression
+           recenter-top-bottom
+           downcase-word
+           upcase-word
+           capitalize-word
+           dabbrev-expand
            ;; User
-           "C-c o"
-           "C-c C-f"
-           "C-S-e"
-           "C-s" "C-c i"
-           "C-c C-e" "C-c C-r"
-           "C-:" "M-o"
-           "<f3>" "<f4>"
-         )
-      )
-      (keypairs-from-binding '(
-                                "C-l"
-                                ) global-map)
-      (keypairs-from-binding '("{" "}" "C-e" "C-y" "'" "M" "B" "W") evil-motion-state-map)
-      (keypairs-from-binding '(
-                                "O" "o" "R"
-                                "J"
-                                "m"
-                                "\"") evil-normal-state-map)
-      (keypairs-from-binding '("C-v" "C-a" "C-d" "C-t" "C-k") evil-insert-state-map)
-      (keypairs-from-binding '("(" "C-}") dired-mode-map)
-;;       (read
-;;         (concat "("
-;;           (shell-command-to-string
-;;             "cd ~/.emacs.d; source ~/.bash_personal; frem '/[-(]set-key +(.+) (.+?)[ \\)]
-;; /g' '($1 . \"$2\")' init.el init-extra.el")
-;;           ")"))
-;;       (read
-;;         (concat "("
-;;           (shell-command-to-string
-;;             "cd ~/.emacs.d; source ~/.bash_personal; frem '/\\(bind-key +\"(.+?)\" #?.(.+?)[ \\)]
-;; /g' '(\"$1\" . \"$2\")' init.el init-extra.el")
-;;           ")"))
+           switch-to-minibuffer
+           ffap
+           py-eval-region
+           swiper
+           counsel-imenu
+           crux-eval-and-replace
+           crux-rename-file-and-buffer
+           avy-goto-char
+           ace-window
+           kmacro-start-macro-or-insert-counter
+           kmacro-end-or-call-macro
+           recenter-top-bottom
+        ) global-map)
+      (keypairs-from-functions
+        '(
+           evil-forward-paragraph
+           evil-backward-paragraph
+           evil-scroll-line-down
+           evil-scroll-line-up
+           evil-goto-mark-line
+           evil-window-middle
+           evil-window-bottom
+           evil-forward-WORD-begin
+        ) evil-motion-state-map)
+      (keypairs-from-functions
+        '(
+           evil-open-fold
+           evil-close-fold
+           evil-open-above
+           evil-open-below
+           ;; evil-replace-state
+           evil-join
+           evil-set-marker
+           ;; evil-execute-in-emacs-state
+        ) evil-normal-state-map)
+      (keypairs-from-functions
+        '(
+           evil-quoted-insert
+           evil-paste-last-insertion
+           evil-shift-left-line
+           evil-shift-right-line
+           evil-insert-digraph
+        ) evil-insert-state-map)
+      (keypairs-from-functions
+        '(
+           dired-hide-details-mode
+           dired-maybe-insert-subdir
+        ) dired-mode-map)
     )
   )
 )
@@ -199,11 +230,21 @@
   :config
   (flycheck-define-checker python-pycodestyle
     "A Python syntax and style checker using pycodestyle (former pep8)."
-    :command ("python3" "-m" "pycodestyle" "--max-line-length=120" "--ignore=E128" source)
+    :command ("python3" "-m" "pycodestyle" "--max-line-length=120" "--ignore=E128" "-")
+    :standard-input t
     :error-patterns
     ((error line-start (file-name) ":" line ":" column ":" (message) line-end))
     :modes python-mode)
+  (flycheck-define-checker python-mypy "Python type checking with MyPy"
+    :command ("mypy"
+              "--ignore-missing-imports" "--fast-parser"
+              source-original)
+    :error-patterns
+    ((error line-start (file-name) ":" line ": error:" (message) line-end))
+    :modes python-mode)
   (add-to-list 'flycheck-checkers 'python-pycodestyle)
+  ;; (add-to-list 'flycheck-checkers 'python-mypy)
+  ;; (flycheck-add-next-checker 'python-pycodestyle 'python-mypy t)
   (setq flycheck-error-list-format
   `[("File" 8)
       ("Line" 5 flycheck-error-list-entry-< :right-align t)
@@ -212,14 +253,29 @@
       ("ID" 6 t)
       (,(flycheck-error-list-make-last-column "Message" 'Checker) 0 t)]))
 
-;; (use-package flymake-shellcheck
-;;   :commands flymake-shellcheck-load
-;;   :init
-;;   (add-hook 'sh-mode-hook 'flymake-shellcheck-load))
+(use-package flymake-shellcheck
+  :commands flymake-shellcheck-load
+  :init
+  (add-hook 'sh-mode-hook 'flymake-shellcheck-load))
 
-(use-package sunrise
-  :commands (sunrise sunrise-cd)
-  :config (setq sunrise-cursor-follows-mouse nil))
+(defun shellcheck-ediff ()
+  (interactive)
+  (let* ((tmpbuffer (make-temp-name "patch")))
+    (call-shell-region nil nil "shellcheck -f diff -" nil tmpbuffer)
+    (ediff-patch-file 2 tmpbuffer)
+  )
+)
+
+(use-package efar
+  :commands (efar)
+  :config
+  (bind-key "<mouse-4>" #'efar-do-move-up 'efar-mode-map)
+  (bind-key "<mouse-5>" #'efar-do-move-down 'efar-mode-map)
+  )
+
+;; (use-package sunrise
+;;   :commands (sunrise sunrise-cd)
+;;   :config (setq sunrise-cursor-follows-mouse nil))
 
 (use-package projectile
   :commands (projectile-mode)
@@ -244,6 +300,26 @@
   :commands py-autopep8
   :config
   (setq py-autopep8-options '("--aggressive" "--ignore=E302,E305,E226,E128,W50,E722" "--max-line-length=120")))
+
+
+;; LSP support
+(use-package eglot
+  :commands eglot
+  :config
+  (use-package flycheck-eglot
+    :after (flycheck eglot)
+    :config
+    (setq flycheck-eglot-exclusive nil)
+    (global-flycheck-eglot-mode 1))
+  (add-to-list 'eglot-server-programs
+               `(python-mode . ,(eglot-alternatives
+                                  '(("python3" "/home/sgiovan/workspace/dev-vscode-python/build/extensions/charliermarsh.ruff-2023.50.0/extension/bundled/tool/server.py"
+                                      :initializationOptions
+                                      ())
+                                  ("phewls" "--fast")))))
+  (add-to-list 'flycheck-checkers 'eglot-check)
+  (flycheck-add-next-checker 'python-pycodestyle 'eglot-check)
+)
 
 ;;(add-hook 'python-mode-hook (lambda ()
 ;;  (require 'py-autopep8)
@@ -279,6 +355,11 @@
 ;; string-inflection
 (use-package string-inflection)
 
+;; (require 'page-break-lines)
+;; (global-page-break-lines-mode 1)
+
+(require 'org-lazy-babel)
+
 ;; ace-window
 (use-package ace-window
   :bind (("M-o" . 'ace-window))
@@ -296,6 +377,11 @@
 
 (use-package treemacs
   :commands (treemacs))
+
+(setq tetris-score-file "~/.emacs.d/tetris-scores")
+(autoload 'tetris "tetris2" "tetris major mode" t)
+
+(autoload 'floodit "floodit" "floodit major mode" t)
 
 ;; Hideshow
 ;; (defun +data-hideshow-forward-sexp (arg)
@@ -328,9 +414,11 @@
 ;; ))
 
 (defun company-initialize-and-complete ()
+  "Lazy-load company and immedately try completion."
   (interactive)
   (company-mode 1)
   (company-complete))
+
 (use-package company
   :bind (("C-c TAB" . company-initialize-and-complete)
          ("C-<tab>" . company-initialize-and-complete)
@@ -452,16 +540,16 @@
 
 (add-hook 'markdown-mode-hook (lambda ()
 (setq-local imenu-generic-expression-markdown
-   '(;; ("title" "^\\(.*\\)[\n]=+$" 1)
-     ;; ("h2-"   "^\\(.*\\)[\n]-+$" 1)
-     ;; ("h1"    "^# \\(.*\\)$" 1)
-     ("h2"    "^## \\(.*\\)$" 1)
-     ("h3"    "^### \\(.*\\)$" 1)
-     ("h4"    "^#### \\(.*\\)$" 1)
-     ("h5"    "^##### \\(.*\\)$" 1)
-     ("h6"    "^###### \\(.*\\)$" 1)
-     ("fn"    "^\\[\\^\\(.*\\)\\]" 1)
-))
+    '(;; ("title" "^\\(.*\\)[\n]=+$" 1)
+      ;; ("h2-"   "^\\(.*\\)[\n]-+$" 1)
+      ;; ("h1"    "^# \\(.*\\)$" 1)
+      ("h2" "^## \\(.*\\)$" 1)
+      ("h3" "^### \\(.*\\)$" 1)
+      ("h4" "^#### \\(.*\\)$" 1)
+      ("h5" "^##### \\(.*\\)$" 1)
+      ("h6" "^###### \\(.*\\)$" 1)
+      ("fn" "^\\[\\^\\(.*\\)\\]" 1)
+  ))
   (setq-local imenu-generic-expression imenu-generic-expression-markdown)))
 
 ;;(require 'dockerfile-mode)
@@ -469,12 +557,13 @@
 (use-package dockerfile-mode
   :mode (("Dockerfile'" . dockerfile-mode)))
 
+(use-package json-mode
+  :mode (("\\.json" . json-mode))
+  ;;:config (add-hook 'json-mode-hook (lambda () (json-par-mode 1)))
+)
+
 (use-package mustache-mode
   :mode (("\\.tcl'" . mustache-mode)))
-
-;; org-mode is default mode for txt files
-(add-to-list 'auto-mode-alist '("\\.txt\\'" . org-mode))
-;;(add-to-list 'auto-mode-alist '("\\.\\(org\\|org_archive\\|txt\\)$" . org-mode))
 
 (use-package jinja2-mode
   :mode ("\\.j2\\'" . jinja2-mode))
@@ -525,6 +614,10 @@
 
 (add-hook 'yaml-mode-hook 'outline-hook-yaml)
 
+;;# Hydras
+
+(use-package hydra)
+
 ;;TODO Artist mode QoL
 (add-hook 'artist-mode-hook
   (lambda ()
@@ -545,8 +638,335 @@
     (local-set-key (kbd "C-z") 'undo)
   ))
 
+(defhydra hydra-flycheck
+  (:pre (let ((display-buffer-overriding-action '(display-buffer-below-selected)))
+          (flycheck-list-errors))
+     ;; :post (quit-windows-on "*Flycheck errors*")
+     :hint nil
+     :color pink)
+  "Errors"
+  ("f" flycheck-error-list-set-filter "Filter")
+  ("n" flycheck-next-error "Next")
+  ("p" flycheck-previous-error "Previous")
+  ("gg" flycheck-first-error "First")
+  ("G" (progn (goto-char (point-max)) (flycheck-previous-error)) "Last")
+  ("q" nil))
+(global-set-key (kbd "C-c k") #'hydra-flycheck/body)
+
+(defhydra hydra-dired (:hint nil :color pink)
+  "
+_+_ mkdir          _v_iew           _m_ark             _(_ details        _i_nsert-subdir    wdired
+_C_opy             _O_ view other   _U_nmark all       _)_ omit-mode      _$_ hide-subdir    C-x C-q : edit
+_D_elete           _o_pen other     _u_nmark           _l_ redisplay      _w_ kill-subdir    C-c C-c : commit
+_R_ename           _M_ chmod        _t_oggle           _g_ revert buf     _e_ ediff          C-c ESC : abort
+_Y_ rel symlink    _G_ chgrp        _E_xtension mark   _s_ort             _=_ pdiff
+_S_ymlink          ^ ^              _F_ind marked      _._ toggle hydra   \\ flyspell
+_r_sync            ^ ^              ^ ^                ^ ^                _?_ summary
+_z_ compress-file  _A_ find regexp
+_Z_ compress       _Q_ repl regexp
+
+T - tag prefix
+"
+  ("\\" dired-do-ispell)
+  ("(" dired-hide-details-mode)
+  (")" dired-omit-mode)
+  ("+" dired-create-directory)
+  ("=" diredp-ediff)         ;; smart diff
+  ("?" dired-summary)
+  ("$" diredp-hide-subdir-nomove)
+  ("A" dired-do-find-regexp)
+  ("C" dired-do-copy)        ;; Copy all marked files
+  ("D" dired-do-delete)
+  ("E" dired-mark-extension)
+  ("e" dired-ediff-files)
+  ("F" dired-do-find-marked-files)
+  ("G" dired-do-chgrp)
+  ("g" revert-buffer)        ;; read all directories again (refresh)
+  ("i" dired-maybe-insert-subdir)
+  ("l" dired-do-redisplay)   ;; relist the marked or singel directory
+  ("M" dired-do-chmod)
+  ("m" dired-mark)
+  ("O" dired-display-file)
+  ("o" dired-find-file-other-window)
+  ("Q" dired-do-find-regexp-and-replace)
+  ("R" dired-do-rename)
+  ("r" dired-do-rsynch)
+  ("S" dired-do-symlink)
+  ("s" dired-sort-toggle-or-edit)
+  ("t" dired-toggle-marks)
+  ("U" dired-unmark-all-marks)
+  ("u" dired-unmark)
+  ("v" dired-view-file)      ;; q to exit, s to search, = gets line #
+  ("w" dired-kill-subdir)
+  ("Y" dired-do-relsymlink)
+  ("z" diredp-compress-this-file)
+  ("Z" dired-do-compress)
+  ("q" nil)
+  ("." nil :color blue))
+
+(add-hook 'dired-mode-hook
+          (lambda ()
+            (define-key dired-mode-map (kbd "C-c .") #'hydra-dired/body)
+          ))
 
 
-(setq tetris-score-file "~/.emacs.d/tetris-scores")
-(autoload 'tetris "tetris2" "tetris major mode" t)
+;;=====================================================================
+;;# Evil
+
+;; (if (not (and (boundp 'my-evil-loaded) (fboundp 'evil-mode))) (progn
+
+(message "evil grows in the dark")
+
+;; https://github.com/noctuid/evil-guide
+
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
+
+(setq zenburn-use-variable-pitch t)
+(setq zenburn-scale-org-headlines t)
+(setq zenburn-scale-outline-headlines t)
+(setq zenburn-override-colors-alist
+  '(
+    ("zenburn-bg-1"       . "#2b2b2b") ;Active mode line
+    ("zenburn-bg-05"      . "#383838") ;Inactive mode line
+    ("zenburn-bg"         . "#2f2f2f") ;Background
+   )
+)
+
+(unless window-system
+  (add-to-list 'zenburn-override-colors-alist
+    '("zenburn-bg"       . "unspecified-bg") ;Don't use background characters in terminal
+))
+
+(load-theme 'zenburn t)
+(add-hook 'highlight-indentation-mode-hook (
+    lambda ()
+    (set-face-background 'highlight-indentation-face "#383838")
+    (set-face-background 'highlight-indentation-current-column-face "#2b2b2b")
+))
+
+(message "where the sun it never shines")
+
+; (add-to-list 'load-path "~/.emacs.d/evil/")
+; (add-to-list 'load-path "~/.emacs.d/site-lisp/evil-1.14.2/")
+
+(use-package evil
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-overriding-maps nil)
+  ;; (setq evil-search-module 'isearch)
+  (setq evil-search-module 'evil-search)
+  (setq evil-collection-want-unimpaired-p nil)
+  (setq global-evil-collection-unimpaired-mode nil)
+  (setq evil-undo-system 'undo-fu)
+  ;; (setq evil-ex-substitute-global t)
+  :config
+  (evil-mode 1)
+  (evil-define-key 'normal 'global
+    "u" 'undo-fu-only-undo
+    "\C-r" 'undo-fu-only-redo)
+  ;; C-g stops highlighting too
+  (defadvice keyboard-quit (before evil activate)
+    (when (fboundp 'evil-ex-nohighlight)
+      (evil-ex-nohighlight)))
+)
+
+(use-package evil-visual-mark-mode
+  :config
+  (evil-visual-mark-mode 1))
+
+(message "evil grows in cracks and holes")
+
+(add-to-list 'load-path (car
+  (file-expand-wildcards "~/.emacs.d/elpa/evil-collection-*")))
+(require 'evil-collection)
+
+;; Manually enable evil-collection extensions for modes in this list
+
+(defun evil-collection-loadmode (mode &optional altmode)
+  (let ((setupfn (concat "evil-collection-" mode "-setup"))
+        (elfile (car (file-expand-wildcards
+	                   (concat "~/.emacs.d/elpa/evil-collection-*/modes/" mode "/evil-collection-" mode ".el")))))
+    (if (not elfile)
+        (message "no file to load %s with %s" mode setupfn)
+      (autoload (intern setupfn) elfile)
+      (eval-after-load (intern (or altmode mode)) (funcall (intern setupfn))))
+))
+
+(dolist
+  (mode '("dired" "buff-menu" "compile" "markdown-mode" "smerge" "info" "which-key" "tar-mode"))
+    (evil-collection-loadmode mode))
+
+(condition-case nil
+    (evil-collection-loadmode "ztree" "ztree-dir")
+  (wrong-type-argument (message "Failed evil-loading ztree")))
+
+(evil-collection-loadmode "org" "org-mode")
+
+(use-package magit
+  :commands (magit)
+  :config (evil-collection-loadmode "magit")
+          ;;(add-hook 'with-editor-mode-hook 'evil-insert-state)
+  )
+
+(message "and lives in people's minds")
+
+(evil-define-key 'normal 'global
+ "x" 'execute-extended-command ;; N x = M-x
+ "gr" 'revert-buffer
+ "q" 'quit-window ;; restore emacs q (evil macros don't work???)
+ [escape] nil ; restore M- behavior in normal mode
+)
+
+(evil-define-key 'visual 'global
+  (kbd "<backtab>") 'evil-shift-left
+  (kbd "<tab>") 'indent-region
+)
+
+(evil-define-key 'visual org-mode-map
+  "*" (lambda () (interactive) (org-emphasize ?*))
+  "/" (lambda () (interactive) (org-emphasize ?/))
+  "_" (lambda () (interactive) (org-emphasize ?_))
+  "=" (lambda () (interactive) (org-emphasize ?=))
+  "~" (lambda () (interactive) (org-emphasize ?~))
+  "+" (lambda () (interactive) (org-emphasize ?+))
+)
+
+(define-key evil-visual-state-map (kbd "<backtab>") 'evil-shift-left)
+
+(use-package dired-preview
+  :commands (dired-preview-mode dired-preview-global-mode)
+  :config
+  (defun my-dired-preview-to-the-right ()
+    "My preferred `dired-preview-display-action-alist-function'."
+    '((display-buffer-in-side-window)
+      (side . right)
+      (width . 1)
+    ))
+
+  (setq dired-preview-display-action-alist-function #'my-dired-preview-to-the-right)
+
+  ;; Default values for demo purposes
+  (setq dired-preview-delay 0.7)
+  (setq dired-preview-ignored-extensions-regexp
+        (concat "\\."
+                "\\(mkv\\|webm\\|mp4\\|mp3\\|ogg\\|m4a"
+                "\\|gz\\|zst\\|tar\\|xz\\|rar\\|zip"
+                "\\|iso\\|epub\\|pdf\\)"))
+
+  ;; Enable `dired-preview-mode' in a given Dired buffer or do it
+  ;; globally:
+  (dired-preview-global-mode 1)
+)
+
+
+(use-package dired-quick-sort
+  :config
+  (evil-define-key 'normal 'dired-mode-map
+    "S" 'hydra-dired-quick-sort/body)
+  )
+
+;; TODO string-inflection operator
+;; (evil-define-operator evil-operator-string-inflection (beg end _type)
+;;       "Define a new evil operator that cycles symbol casing."
+;;       :move-point nil
+;;       (interactive "<R>")
+;;       (string-inflection-all-cycle)
+;;       (setq evil-repeat-info '([?g ?~])))
+;; (define-key evil-normal-state-map (kbd "g~") 'evil-operator-string-inflection)
+
+(defun evil-quick-replace-selection (start end)
+  "Quickly open a command to globally replace the current region with a new value"
+  (interactive "r") ; operate on region
+  (let* ((escaped (buffer-substring-no-properties start end))
+         (escaped (replace-regexp-in-string "\\]" (regexp-quote "]")   escaped))
+         (escaped (replace-regexp-in-string "\\*" "\\\\*"              escaped))
+         (escaped (replace-regexp-in-string "/"   (regexp-quote "\\/") escaped))
+         (escaped (replace-regexp-in-string "\n"  (regexp-quote "\\n") escaped)))
+   (evil-ex (concat "%s/" escaped "/"))))
+
+(global-set-key (kbd "C-S-h") 'evil-quick-replace-selection) ;; N x = M-x
+
+(defun force-undo-boundary ()
+  (evil-end-undo-step)
+  (undo-boundary)
+  (evil-start-undo-step))
+
+(add-hook 'after-save-hook 'force-undo-boundary)
+
+(evil-ex-define-cmd "q" 'kill-current-buffer)
+(evil-ex-define-cmd "wq" 'save-and-kill-this-buffer)
+(defun save-and-kill-this-buffer()
+  (interactive)
+  (save-buffer)
+  (kill-current-buffer)
+)
+
+(dolist
+  (mode '(;buffer-menu-mode
+          artist-mode
+          picture-mode
+          floodit-mode
+          speedbar-mode
+          ;;json-par-mode
+          ))
+  (add-to-list 'evil-emacs-state-modes mode))
+
+(add-hook 'speedbar-mode-hook
+  (lambda ()
+    (evil-emacs-state)))
+
+(add-hook 'artist-mode-init-hook
+  (lambda ()
+    (evil-emacs-state)))
+
+(setq evil-shift-width 2)
+(add-hook 'python-mode-hook (lambda ()
+   (setq-local evil-shift-width 4)))
+
+(defhydra hydra-flymake
+  (:pre (let ((display-buffer-overriding-action '(display-buffer-below-selected)))
+          (flymake-show-buffer-diagnostics))
+     ;; :post (quit-windows-on (flymake--diagnostics-buffer-name))
+     :hint nil
+     :color pink)
+  "Errors"
+  ;;("f" flycheck-error-list-set-filter "Filter")
+  ("n" flymake-goto-next-error "Next")
+  ("N" flymake-goto-prev-error "Previous")
+  ("c" flymake-start "Check")
+  ("s" flymake-mode "Stop flymake-mode")
+  ("q" nil))
+(define-key evil-normal-state-map (kbd "C-c m") #'hydra-flymake/body)
+;(global-set-key (kbd "C-c m") #'hydra-flymake/body)
+
+(defhydra hydra-flycheck
+  (:pre (let ((display-buffer-overriding-action '(display-buffer-below-selected)))
+          (flycheck-list-errors))
+     ;; :post (quit-windows-on "*Flycheck errors*")
+     :hint nil
+     :color pink)
+  "Errors"
+  ("f" flycheck-error-list-set-filter "Filter")
+  ("n" flycheck-next-error "Next")
+  ("p" flycheck-previous-error "Previous")
+  ("gg" flycheck-first-error "First")
+  ("G" (progn (goto-char (point-max)) (flycheck-previous-error)) "Last")
+  ("q" nil))
+;; (global-set-key (kbd "C-c k") #'hydra-flycheck/body)
+(define-key evil-normal-state-map (kbd "C-c k") #'hydra-flycheck/body)
+
+(setq my-evil-loaded t)
+;;))
+
+;;# Misc
+
+;;TODO quick actions transient
+;; (transient-define-prefix quick-menu ()
+;;   ;; :transient-suffix     'transient--do-stay
+;;   ;; :transient-non-suffix 'transient--do-warn
+;;    [("c" "open blog content" (lambda () (find-file "~/Documents/blog/content")))
+;;   ]
+;; )
+
 

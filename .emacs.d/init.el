@@ -53,13 +53,12 @@
            "Consolas-12:weight=normal"
            "DejaVu Sans Mono-12:weight=normal"
            "Courier New-12:weight-normal")
-    :height 110)
+    :height 110))
   ;; (when (member "Noto Emoji" (font-family-list))
   ;;   (set-fontset-font
   ;;    t 'symbol (font-spec :family "Noto Emoji") nil 'prepend)
   ;; )
   ;; Test: ????
-)
 
 (progn
   ;; set font for emoji (if before emacs 28, should come after setting symbols. emacs 28 now has 'emoji . before, emoji is part of 'symbol)
@@ -76,6 +75,16 @@
     ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")
     ((member "Symbola" (font-family-list)) "Symbola"))))
 
+(if (window-system)
+  (set-face-attribute 'default nil
+    :font (font-candidate
+           "DejaVu Sans Mono-12:weight=normal"
+           "Consolas-12:weight=normal"
+           "Courier New-12:weight-normal"
+	       "Cousine-12:weight=normal"
+	       "Monospace-12:weight=normal")
+    :height 110))
+
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 (add-to-list 'load-path "~/.emacs.d/themes/")
 
@@ -84,15 +93,24 @@
 ;; Otherwise, you probably shouldn't use colors at all. (Uncomment this:)
 ;;(global-font-lock-mode 0)
 
+(defun get-strings-of-face (facematch)
+  (setq words '())
+  (save-excursion
+    (goto-char 0)
+    (while (setq match (text-property-search-forward 'face facematch t))
+      (push
+        (string-trim
+          (buffer-substring-no-properties
+            (prop-match-beginning match)
+            (prop-match-end match)))
+        words)
+    )
+  )
+  (reverse words))
+
+
 ;;=====================================================================
 ;;# Commands
-
-;; (defun command-line-diff (switch)
-;;   (let ((file1 (pop command-line-args-left))
-;;         (file2 (pop command-line-args-left)))
-;;     (ediff file1 file2)))
-
-;; (add-to-list 'command-switch-alist '("diff" . command-line-diff))
 
 (defun toggle (opt)
   "Toggle option's value.  This makes sense for binary (toggle) options.
@@ -118,18 +136,57 @@ candidates, as follows:
     (set sym (not (eval sym))) (message "`%s' is now %s" opt (eval sym))))
 
 (defun windowsify-path (path)
-  (replace-regexp-in-string "/\\([a-z]\\)/" "\\1:/" path nil nil))
+  (if
+    (member system-type '(ms-dos windows-nt cygwin))
+    (replace-regexp-in-string "/\\(cygdrive\\/\\)?\\([a-z]\\)/" "\\2:/" path nil nil)
+    path))
 
 ;;(defun regenerate-autoloads ()
 ;;  (interactive)
 ;;  ;(package-generate-autoloads package-name default-directory)
 ;;)
 
+(defun copy-file-path-to-kill ()
+  (interactive)
+  (kill-new buffer-file-name))
+
 (defun org-toggle-wysiwyg ()
   (interactive)
   (toggle "org-hide-emphasis-markers")
   ; (org-bullets-mode org-hide-emphasis-markers)
 )
+
+(defun split-window-multiple-ways (x y)
+  "Split the current frame into a grid of X columns and Y rows."
+  (interactive "nColumns: \nnRows: ")
+  ;; one window
+  (delete-other-windows)
+  (dotimes (i (1- x))
+      (split-window-horizontally)
+      (dotimes (j (1- y))
+	(split-window-vertically))
+      (other-window y))
+  (dotimes (j (1- y))
+    (split-window-vertically))
+  (balance-windows))
+
+(defun get-window-in-frame (x y &optional frame)
+  "Find Xth horizontal and Yth vertical window from top-left of FRAME."
+  (let ((orig-x x) (orig-y y)
+        (w (frame-first-window frame)))
+    (while (and (windowp w) (> x 0))
+      (setq w (windmove-find-other-window 'right 1 w)
+            x (1- x)))
+    (while (and (windowp w) (> y 0))
+      (setq w (windmove-find-other-window 'down 1 w)
+            y (1- y)))
+    (unless (windowp w)
+      (error "No window at (%d, %d)" orig-x orig-y))
+    w))
+
+(defun set-window-buffer-in-frame (x y buffer &optional frame)
+  "Set Xth horizontal and Yth vertical window to BUFFER from top-left of FRAME."
+  (set-window-buffer (get-window-in-frame x y frame) buffer))
 
 (defun indent-buffer ()
   "Automatically indent the whole buffer"
@@ -147,14 +204,36 @@ candidates, as follows:
     " ") ;;The joiner
   )
 
-(defun shell-term (new-buffer-name cmd &rest switches)
+(defun shell-term-comint (new-buffer-name)
   "Create a new buffer running command `cmd' with the provided switches"
+  (let* ((explicit-bash-args '("--noediting" "--init-file" "~/.bash_profile" "-i"))
+          (explicit-shell-file-name "/bin/bash"))
+    (shell new-buffer-name)
+    ))
+
+(defun shell-term (new-buffer-name cmd &rest switches)
+  "Create a new ansi buffer running command `cmd' with the provided switches"
   ;;(setq term-ansi-buffer-name (concat "*" new-buffer-name "*"))
-  (setq term-ansi-buffer-name (generate-new-buffer-name (or new-buffer-name "term")))
-  (setq term-buffer (set-buffer (apply 'make-term term-ansi-buffer-name cmd nil switches)))
+  (setq term-ansi-buffer-name
+    (generate-new-buffer-name (or new-buffer-name "term")))
+  (setq term-buffer
+    (set-buffer
+      (apply 'make-term term-ansi-buffer-name cmd nil switches)))
   (term-mode)
   (term-char-mode)
   term-buffer)
+
+(defun termwith-comint (title commandlist)
+  "Create a new buffer running a bash shell and send it a list of lines"
+  (let* ((shell-buff (shell-term title))
+         (proc (get-buffer-process shell-buff)))
+    (dolist (command commandlist)
+      (comint-send-input)
+      (accept-process-output proc)
+      (comint-send-string proc command)
+      ;; (accept-process-output proc)
+      )
+    shell-buff))
 
 (defun termwith (title commandlist)
   "Create a new buffer running a bash shell and send it a list of lines"
@@ -208,6 +287,16 @@ candidates, as follows:
   (let ((zone-programs (list (intern pgm))))
     (zone)))
 
+(defun copy-file-path-to-clipboard ()
+  "Copy the current buffer file name to the clipboard."
+  (interactive)
+  (let ((filename (if (equal major-mode 'dired-mode)
+                      default-directory
+                    (buffer-file-name))))
+    (when filename
+      (kill-new filename)
+      (message "Copied buffer file name '%s' to the clipboard." filename))))
+
 (defun theme-mark-alt-buffer ()
   "Visually mark the current buffer with an alternative scheme"
   (interactive)
@@ -237,6 +326,8 @@ candidates, as follows:
 ;; todo echo output to messages
 (bind-key "C-c e" #'eval-buffer 'emacs-lisp-mode-map)
 (bind-key "C-c r" #'eval-region 'emacs-lisp-mode-map)
+(bind-key "C-c e" #'eval-buffer 'lisp-interaction-mode-map)
+(bind-key "C-c r" #'eval-region 'lisp-interaction-mode-map)
 (add-hook 'emacs-lisp-mode-hook (lambda ()
    (setq-local evil-shift-width 2)))
 
@@ -304,12 +395,20 @@ candidates, as follows:
 ;;C-S-/ to toggle comment
 (bind-key "C-?" #'comment-or-uncomment-region)
 
+(global-set-key (kbd "C-c b") #'switch-to-buffer)
+
 (defun apply-to-region (func)
   (undo-boundary)
   (let* ((substr (buffer-substring (mark) (point)))
         (res (funcall func substr)))
     (delete-region (region-beginning) (region-end))
     (insert res)))
+
+(defun replace-last-sexp ()
+  (interactive)
+  (let ((value (eval (preceding-sexp))))
+    (kill-sexp -1)
+    (insert (format "%S" value))))
 
 (defun replace-or-display (arg expr result)
   "Replace the region with `result, or just display that `expr = `result if arg is not null."
@@ -488,9 +587,17 @@ candidates, as follows:
   sh-basic-offset 2
   python-shell-interpreter "python3")
 
-(add-hook 'shell-mode-hook (lambda ()
+(add-hook 'sh-mode-hook (lambda ()
    (setq-local evil-shift-width 2)))
 (setq ess-fancy-comments nil)
+
+(add-hook 'sh-mode-hook
+  (lambda ()
+    (setq-local imenu-generic-expression
+      (append
+       '(("Comment" "^## ?\\(.+\\)" 1)
+         )
+       imenu-generic-expression))))
 
 (add-hook 'term-mode-hook
   (lambda ()
@@ -568,6 +675,9 @@ candidates, as follows:
 (setq speedbar-use-images nil)
 (winner-mode t)
 
+(require 'recentf)
+(recentf-mode)
+
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'post-forward)
 
@@ -629,6 +739,7 @@ candidates, as follows:
 ))
 
 ;; (add-hook 'prog-mode-hook       'outline-minor-mode)
+(add-hook 'prog-mode-hook 'hs-minor-mode)
 
 (defun ediff-copy-both-to-C ()
   "In `ediff', copy the text from both A and B to C, for hand-editing."
@@ -646,13 +757,14 @@ candidates, as follows:
 
 ;; Run/highlight code using babel in org-mode
 (with-eval-after-load 'org
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '(
-     (python . t)
-     (shell . tool-bar-mode) ; (sh . tool-bar-mode) in older emacs versions
-     ;; Include other languages here...
-     ))
+  ;; (org-babel-do-load-languages
+  ;;  'org-babel-load-languages
+  ;;  '(
+  ;;    (python . t)
+  ;;    (shell . tool-bar-mode) ; (sh . tool-bar-mode) in older emacs versions
+  ;;    ;; Include other languages here...
+  ;;     ))
+
   (defun my-org-ctrl-return-dwim ()
     "DWIM ctrl-return in org mode: execute babel block or insert heading"
     (interactive)

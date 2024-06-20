@@ -24,14 +24,15 @@ def render_template(template_path, input_data):
         loader=jinja2.FileSystemLoader(os.path.dirname(template_path)),
         extensions=EXTENSIONS,
         keep_trailing_newline=True,
+        undefined=jinja2.StrictUndefined,
         **exopts
     )
 
     # Add environ global
-    os.environ["UID"] = str(os.getuid())
+    if hasattr(os, 'getuid'):
+        os.environ["UID"] = str(os.getuid())
     env.globals["environ"] = lambda key: str(os.environ.get(key))
     env.globals["get_context"] = lambda: input_data
-
 
     return env.get_template(os.path.basename(template_path)).render(input_data)
 

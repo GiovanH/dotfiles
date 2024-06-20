@@ -50,7 +50,11 @@ export HISTCONTROL=ignoreboth:erasedups
 export HISTSIZE=10000
 export HISTFILESIZE=20000
 
-alias hgrep="grep -r $HOME/.history/ -h -e"
+# alias hgrep=""
+hgrep() {
+  # uniqs
+  grep -r $HOME/.history/ -h -e "$@" | perl -ne 'print unless $seen{$_}++'
+}
 
 # Append all history
 export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}history -a"
