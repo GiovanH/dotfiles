@@ -12,3 +12,5 @@ Locale=en_US
 Charset=UTF-8
 FontSmoothing=default
 RewrapOnResize=yes
+Answerback=xterm-256color
+StatusLine=no

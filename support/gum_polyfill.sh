@@ -1,7 +1,6 @@
 #!/bin/bash
 
-which gum &> /dev/null && return
-# echo "No gum!"
+which gum &> /dev/null && echo "Don't replace gum with gum polyfill!" && return
 
 gum() {
   cmd=$1

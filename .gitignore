@@ -1,0 +1,11 @@
+*#
+*~
+
+*.bak
+
+*.elc
+
+support/_*.sh
+__pycache__
+
+share/output/*

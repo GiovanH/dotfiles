@@ -116,3 +116,8 @@ endfun
 if has("autocmd")
     autocmd BufWritePre *.txt,*.js,*.py,*.wiki,*.sh,*.coffee :call CleanExtraSpaces()
 endif
+
+" Disable modifyOtherKeys
+:set t_TI=
+:set t_TE=
+:set t_RK=

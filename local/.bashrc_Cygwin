@@ -4,7 +4,7 @@
 export COLOR_HOST=$COLOR_GREEN
 
 export TERM=cygwin
-export CYGWIN=winsymlinks:native
+export CYGWIN="winsymlinks:nativestrict"
 
 pathmunge "/cygdrive/c/Program Files/7-Zip"
 pathmunge "${HOME}/.local/bin/jdupes-1.21.3-win64"
@@ -28,7 +28,35 @@ alias python3="py -3"
 alias sudo="cygstart --action=runas"
 
 alias ps="ps -W"
+# alias ps="procps -wwFAH"
 alias killall="taskkill /f /im"
+
+cyg-setup() {
+  (
+    t=$(mktemp --suffix .exe) \
+      && wget 'https://cygwin.com/setup-x86_64.exe' -O "$t" \
+      && chmod +777 "$t" \
+      && "$t";
+    rm "$t" wget-log || :;
+  ) &
+}
+
+notify-send() {
+  title="$1"
+  message="$2"
+  powershell -c '
+    [reflection.assembly]::loadwithpartialname("System.Windows.Forms");
+    [reflection.assembly]::loadwithpartialname("System.Drawing");
+    $notify = new-object system.windows.forms.notifyicon;
+    $notify.icon = [System.Drawing.SystemIcons]::Information;
+    $notify.visible = $true;
+    $notify.showballoontip(10,"'${title:-"title"}'","'${message:-"message"}'",[system.windows.forms.tooltipicon]::None)
+  ' > /dev/null
+}
+
+explore() {
+  (cd "$1" && explorer .)
+}
 
 ## Use case-insensitive filename globbing
 shopt -s nocaseglob
@@ -49,8 +77,10 @@ grep -qxF 'db_home: /%H' /etc/nsswitch.conf \
 #     fi
 # }
 
+# $(printf "%q" "$binpath")
+
 start() {
-  cmd /c "start $@"
+  cmd /C start "" "$@"
 }
 
 windowsify() {
@@ -75,7 +105,7 @@ installsoftware() {
       wget "$url" \
         && extractto "$filename" ~/.local/bin/ \
         && rm -v "$filename"
-      echo "$slug=\"$(date -I)\"" >> ~/.installsoftware
+      echo "${slug}=\"$(date -I)\"" >> ~/.installsoftware
     else
       echo skip $filename
       return 1
@@ -89,6 +119,7 @@ installsoftware() {
   # doinstall "https://github.com/tavianator/bfs/archive/refs/tags/2.6.3.zip" \
   #   && (cd ~/.local/bin/bfs-2.6.3/; make -j)
 
+  mkdir -p ~/.local/man/
   mv -v ~/.local/bin/manpages/* ~/.local/man/
   mv -v ~/.local/bin/completions/* ~/.local/share/completions/
 
@@ -107,6 +138,7 @@ clean() {
   _clean_paths "C:/SearchCache"
   _clean_paths "C:/tmp"
   _clean_paths "${LOCALAPPDATA}/Temp"
+  _clean_subdirs_in_dir "C:/cygwin64/tmp/"
   _clean_files_in_dir "C:/cygwin64/tmp/"
   _clean_paths "C:/Windows/SysWOW64/Logfile.PML"
 
@@ -123,6 +155,9 @@ clean() {
 
   # Problematic program caches
   _clean_paths "C:/MSOCache"
+  _clean_files_in_dir "${APPDATA}/../LocalLow/VRChat/VRChat/Cache-WindowsPlayer"
+
+  python3 -m pip cache purge || :
 
   _clean_paths "${APPDATA}/Apple Computer/Logs/"**/*.log
   _clean_files_in_dir "${APPDATA}/Adobe-Backup/Common/Media Cache Files/"
@@ -134,6 +169,14 @@ clean() {
   _clean_files_in_dir "${LOCALAPPDATA}/electron/Cache/"
   _clean_files_in_dir "${LOCALAPPDATA}/pCloud/Cache/"
 
+  _clean_paths "$HOME/AppData/Local/Box Sync/"*.log
+  _clean_files_in_dir "$HOME/AppData/Local/CrashDumps/"
+  _clean_paths "$HOME/AppData/Roaming/Apple Computer/Logs/"**/*.log
+  _clean_paths "$HOME/AppData/Local/3Dconnexion/3DxWare/"*.log
+
+  _clean_paths "$HOME/AppData/Local/Google/Chrome SxS/Application/"*/Installer/*.*
+  _clean_files_in_dir "$HOME/AppData/Local/Google/Update/"
+
   _clean_files_in_dir "C:/Program Files (x86)/Steam/Logs/"
   _clean_files_in_dir "C:/Program Files/NVIDIA Corporation/Installer2"
 
@@ -142,9 +185,87 @@ clean() {
   _clean_files_in_dir "C:/ProgramData/Apple/Installer Cache/"
   _clean_files_in_dir "C:/ProgramData/NVIDIA Corporation/Downloader/"
   _clean_files_in_dir "C:/ProgramData/NVIDIA Corporation/NV_Cache/"
+  _clean_paths "${LOCALAPPDATA}/ModOrganizer/"**/*.log
 
   # _clean_files_in_dir "${APPDATA}/Local/Steam/htmlcache/"
 
   # clean "${APPDATA}/Roaming/BetterDiscord/plugins/MLV2_IMAGE_CACHE/*"
 }
+
+organize_auto() {
+  (
+    echo "Desktop cleanup"
+
+    mkdir -p "$HOME/Pictures/unsorted/"
+    mv -v -i --target-directory "$HOME/Pictures/unsorted/" \
+      "$HOME/Desktop"/*.{png,gif,jpg,svg,mp3,mp4}
+
+    mkdir -p "$HOME/Software/Unsorted/"
+    mv -v -i --target-directory "$HOME/Software/Unsorted/" \
+      "$HOME/Desktop"/*.exe
+
+    ls -d "$HOME/Desktop"/*.lnk >/dev/null 2>&1 && \
+      prename "s/(.+)\.... - Shortcut.lnk/\$1.lnk/g" "$HOME/Desktop"/*.lnk
+
+    mkdir -p "$APPDATA/Microsoft/Windows/Start Menu/Programs/Unsorted"
+    mv -v -i --target-directory "$APPDATA/Microsoft/Windows/Start Menu/Programs/Unsorted/" \
+      "$HOME/Desktop"/*.lnk \
+      "$HOME/Desktop"/*.url \
+      C:/Users/Public/Desktop/*.lnk
+
+    echo "Downloads to documents, pictures, ..."
+
+    mkdir -p "$HOME/Documents/unsorted/"
+    mkdir -p "$HOME/Pictures/unsorted/"
+    for downloads in "C:/Downloads" "$HOME/Downloads" "$HOME/Desktop"; do
+      mv -v -i --target-directory "$HOME/Documents/unsorted/" \
+        "$downloads"/*.txt \
+        "$downloads"/*.csv \
+        "$downloads"/*.doc* \
+        "$downloads"/*.xls* \
+        "$downloads"/*.pdf* \
+        "$downloads"/*.ppt* \
+
+      mv -v -i --target-directory "$HOME/Pictures/unsorted/" \
+        "$downloads"/*-vid1.mp4 \
+        "$downloads"/*.png      \
+        "$downloads"/*.psd      \
+        "$downloads"/*.gif      \
+        "$downloads"/*.jpg      \
+        "$downloads"/*.svg      \
+        "$downloads"/*.webp     \
+        "$downloads"/*-img.zip  \
+        "$downloads"/*-gif1.mp4
+
+      mv -v -i --target-directory "$HOME/Music/Unsorted/" \
+        "$downloads"/*.mp3
+
+      mv -v -i --target-directory "$HOME/Books/Unsorted/" \
+        "$downloads"/*.epub
+
+      [[ -d "E:/partial/autoimport/" ]] && \
+      mv -v -i --target-directory "E:/partial/autoimport/" \
+        "$downloads"/*.torrent
+
+      mv -v -i --target-directory "$HOME/Torrents/" \
+        "$downloads"/*.torrent
+
+      mv -v -i --target-directory "$HOME/Software/Unsorted/" \
+        "$downloads"/*.exe
+
+      mv -v -i --target-directory "$HOME/Software/Install/" \
+        "$downloads"/*.msi
+    done
+
+    mv -v --target-directory "$HOME/Projects/FantasyConsole/Pico8/carts/" \
+      "$HOME/Downloads"/*.{p8.png,p8} \
+      "$HOME/Pictures/Unsorted"/*.{p8.png,p8} \
+      "$HOME/Pictures"/*.{p8.png,p8}
+
+  ) #  2>&1 | grep -v "cannot stat" # Breaks interactive flag
+}
+
+# Fix navi behavior
+export NAVI_FZF_OVERRIDES="--preview='navi preview {}'"
+export NAVI_FZF_OVERRIDES_VAR="--preview='navi preview-var {+} {q} variable '"
 

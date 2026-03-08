@@ -4,6 +4,7 @@
 	excludesfile = ~/.gitignore
 	hooksPath = ~/.githooks
 	sshCommand = ssh -i ~/.ssh/id_rsa
+	filemode = false
 [color]
 	ui = true
 [ssh]

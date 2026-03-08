@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Bash config for user completions. Sourced by .bash_profile
+
+shopt -s progcomp
+
+complete -u groups slay w sux # user commands see only users
+complete -A stopped -P '"%' -S '"' bg # bg completes with stopped jobs
+complete -j -P '"%' -S '"' fg jobs disown # other job commands
+complete -v readonly unset # readonly and unset complete with shell variables
+complete -A setopt set # set completes with set options
+complete -A shopt shopt # shopt completes with shopt options
+complete -A helptopic help # helptopics
+complete -a unalias # unalias completes with aliases
+complete -c command type which # type and which complete on commands
+complete -b builtin # builtin completes on builtins
+
+# END PUBLIC FILE

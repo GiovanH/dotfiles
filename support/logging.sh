@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ~/dotfiles/support/.bash_colors
+[[ -z "${COLOR_BOLD:-}" ]] && source ~/dotfiles/support/.bash_colors
 
 invis() {
   echo -ne "\e[8m$*\e[0m\r"
@@ -15,7 +15,7 @@ logparam() {
   # Log, alternating colors such that every other arg is a highlighted param.
   # Use LP_LABELC to format odd strings, LP_PARAMC to format even strings.
   for ((i=1; i <= ${#@}; i+=2)); do
-    part=( "${@:i:2}" )
+    part=( "${@:i:2}" );
     echo -n -e "${LP_LABELC:-$COLOR_NC}${part[0]} "
     # part[1] can be empty if count is odd
     echo -n -e "${LP_PARAMC:-$COLOR_CYAN}${part[1]:-} "
@@ -23,14 +23,14 @@ logparam() {
   echo -e "${COLOR_NC}"
 }
 
-logmparam() { echo && LP_LABELC=$COLOR_BOLD logparam "$@"; }
+logmparam() { echo && LP_LABELC=$COLOR_NC$COLOR_BOLD logparam "$@"; }
 
 logerror() {
-  echo -e "${COLOR_RED}❌ $*${COLOR_NC}" > /dev/stderr
+  echo -e "${COLOR_RED}❌ $*${COLOR_NC}" 1>&2
 }
 
 logwarning() {
-  echo -e "${COLOR_YELLOW}⚠ $*${COLOR_NC}" > /dev/stderr
+  echo -e "${COLOR_YELLOW}⚠ $*${COLOR_NC}" 1>&2
 }
 
 # Colorize stderr. 'colorerr {command}'
@@ -39,12 +39,15 @@ colorerr() {
   "$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2)
 }
 
+log() { echo "$@"; }
+
 if [ "${BASH_SOURCE[0]}" -ef "$0" ]
 then
   echo Test:
   invis "You don't see this"
   logmajor "Major"
   logparam "Parameter is" "highlighted"
+  logmparam "A" "major" "parameter is" "highlighted"
   logerror "Error"
   logwarning "Warning"
   colorerr "touch /nosuch/file"

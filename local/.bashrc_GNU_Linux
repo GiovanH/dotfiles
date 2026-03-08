@@ -2,15 +2,18 @@
 
 alias where='type -a'
 
-copy_function clean super_clean
+copy_function clean super_clean_linux
 clean() {
-  super_clean
+  super_clean_linux
 
+  _clean_files_in_dir ~/.ansible/tmp/
   _clean_files_in_dir ~/.cache
   _clean_files_in_dir ~/.tmp
 
+  find ~/.local/share/Trash -mtime +30 -exec rm -v "{}" \;
+
   if [[ "$(groups | grep docker)" ]]; then
-    docker system prune -f
+    docker system prune --all --volumes -f
   fi
   if [[ "$(groups | grep sudo)" ]]; then
     sudo journalctl --vacuum-size=100M
