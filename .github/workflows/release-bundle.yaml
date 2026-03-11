@@ -1,0 +1,25 @@
+name: Publish Git Bundle Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on any tag push starting with 'v'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: write # Required to create releases and upload assets
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Git Bundle
+        run: git bundle create repo.bundle --all
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: repo.bundle
