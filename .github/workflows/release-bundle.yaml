@@ -2,14 +2,17 @@ name: Publish Git Bundle Release
 
 on:
   push:
-    tags:
-      - 'v*' # Triggers on any tag push starting with 'v'
+    tags-ignore:
+      - '**'
+    branches:
+      - '**'
 
 jobs:
-  build-and-release:
+  github-release:
     runs-on: ubuntu-slim
+
     permissions:
-      contents: write # Required to create releases and upload assets
+      contents: write
 
     steps:
       - name: Checkout code
@@ -19,7 +22,21 @@ jobs:
         run: git bundle create repo.bundle --all
 
       - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: repo.bundle
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        continue-on-error: true
+        run: >-
+          gh release create
+          "$(date +'%Y-%m-%d')"
+          --repo '${{ github.repository }}'
+          --notes "" --prerelease
+
+      - name: Upload artifact signatures to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          gh release upload
+          "$(date +'%Y-%m-%d')"
+          repo.bundle
+          --repo '${{ github.repository }}'
+          --clobber
