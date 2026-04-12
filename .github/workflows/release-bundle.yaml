@@ -17,9 +17,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # critical: full history
+          fetch-tags: true      # include all tags too
 
       - name: Create Git Bundle
         run: git bundle create repo.bundle --all
+
+      - name: Verify bundle
+        run: git bundle verify repo.bundle   # will catch gaps before uploading
 
       - name: Create GitHub Release
         env:
